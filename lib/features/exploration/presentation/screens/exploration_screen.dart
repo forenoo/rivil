@@ -237,94 +237,94 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
 
                         const SizedBox(height: 20),
 
-                        // Price range
-                        const Text(
-                          'Kisaran Harga Tiket',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Rp ${_priceRange.start.toInt()}',
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                            Text(
-                              'Rp ${_priceRange.end.toInt()}',
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        RangeSlider(
-                          values: _priceRange,
-                          min: 0,
-                          max: 1000000,
-                          divisions: 20,
-                          activeColor: AppColors.primary,
-                          inactiveColor: AppColors.jordyBlue200,
-                          labels: RangeLabels(
-                            'Rp ${_priceRange.start.toInt()}',
-                            'Rp ${_priceRange.end.toInt()}',
-                          ),
-                          onChanged: (values) {
-                            setState(() {
-                              _priceRange = values;
-                            });
-                          },
-                        ),
+                        // // Price range
+                        // const Text(
+                        //   'Kisaran Harga Tiket',
+                        //   style: TextStyle(
+                        //     fontWeight: FontWeight.bold,
+                        //     fontSize: 16,
+                        //   ),
+                        // ),
+                        // const SizedBox(height: 8),
+                        // Row(
+                        //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        //   children: [
+                        //     Text(
+                        //       'Rp ${_priceRange.start.toInt()}',
+                        //       style: TextStyle(
+                        //         color: Colors.grey.shade600,
+                        //       ),
+                        //     ),
+                        //     Text(
+                        //       'Rp ${_priceRange.end.toInt()}',
+                        //       style: TextStyle(
+                        //         color: Colors.grey.shade600,
+                        //       ),
+                        //     ),
+                        //   ],
+                        // ),
+                        // RangeSlider(
+                        //   values: _priceRange,
+                        //   min: 0,
+                        //   max: 1000000,
+                        //   divisions: 20,
+                        //   activeColor: AppColors.primary,
+                        //   inactiveColor: AppColors.jordyBlue200,
+                        //   labels: RangeLabels(
+                        //     'Rp ${_priceRange.start.toInt()}',
+                        //     'Rp ${_priceRange.end.toInt()}',
+                        //   ),
+                        //   onChanged: (values) {
+                        //     setState(() {
+                        //       _priceRange = values;
+                        //     });
+                        //   },
+                        // ),
 
-                        const SizedBox(height: 20),
+                        // const SizedBox(height: 20),
 
-                        // Maximum distance
-                        const Text(
-                          'Jarak Maksimum',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '0 km',
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                            Text(
-                              '${_maxDistance.toInt()} km',
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Slider(
-                          value: _maxDistance,
-                          min: 0,
-                          max: 100,
-                          divisions: 20,
-                          activeColor: AppColors.primary,
-                          inactiveColor: AppColors.jordyBlue200,
-                          label: '${_maxDistance.toInt()} km',
-                          onChanged: (value) {
-                            setState(() {
-                              _maxDistance = value;
-                            });
-                          },
-                        ),
+                        // // Maximum distance
+                        // const Text(
+                        //   'Jarak Maksimum',
+                        //   style: TextStyle(
+                        //     fontWeight: FontWeight.bold,
+                        //     fontSize: 16,
+                        //   ),
+                        // ),
+                        // const SizedBox(height: 8),
+                        // Row(
+                        //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        //   children: [
+                        //     Text(
+                        //       '0 km',
+                        //       style: TextStyle(
+                        //         color: Colors.grey.shade600,
+                        //       ),
+                        //     ),
+                        //     Text(
+                        //       '${_maxDistance.toInt()} km',
+                        //       style: TextStyle(
+                        //         color: Colors.grey.shade600,
+                        //       ),
+                        //     ),
+                        //   ],
+                        // ),
+                        // Slider(
+                        //   value: _maxDistance,
+                        //   min: 0,
+                        //   max: 100,
+                        //   divisions: 20,
+                        //   activeColor: AppColors.primary,
+                        //   inactiveColor: AppColors.jordyBlue200,
+                        //   label: '${_maxDistance.toInt()} km',
+                        //   onChanged: (value) {
+                        //     setState(() {
+                        //       _maxDistance = value;
+                        //     });
+                        //   },
+                        // ),
 
-                        const SizedBox(height: 20),
+                        // const SizedBox(height: 20),
 
                         // Minimum rating
                         const Text(
@@ -798,12 +798,13 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
                     );
                   }).toList(),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 ElevatedButton(
                   onPressed: () {
                     // Navigate to detail page
                   },
                   style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 40),
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),

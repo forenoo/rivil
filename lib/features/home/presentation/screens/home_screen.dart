@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rivil/core/config/app_colors.dart';
-import 'package:rivil/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:rivil/features/home/presentation/bloc/category_bloc.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -33,13 +33,18 @@ class HomeScreen extends StatelessWidget {
                 ),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: BlocBuilder<AuthBloc, AuthState>(
-                builder: (context, state) {
+              child: Builder(
+                builder: (context) {
+                  final session = Supabase.instance.client.auth.currentSession;
                   String name = 'pengguna';
                   String? avatarUrl;
-                  if (state is AuthAuthenticated) {
-                    name = state.user.name ?? 'pengguna';
-                    avatarUrl = state.user.avatarUrl;
+
+                  if (session != null) {
+                    final userData = session.user.userMetadata;
+                    if (userData != null) {
+                      name = userData['name'] ?? 'pengguna';
+                      avatarUrl = userData['avatar_url'];
+                    }
                   }
 
                   return Column(
@@ -59,7 +64,7 @@ class HomeScreen extends StatelessWidget {
                                 ),
                               ),
                               Text(
-                                'Mau berkeliling?',
+                                'Mau berpetualang?',
                                 style: theme.textTheme.headlineSmall?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
@@ -69,43 +74,6 @@ class HomeScreen extends StatelessWidget {
                             ],
                           ),
                           GestureDetector(
-                            onTap: () {
-                              // Profile actions
-                              showMenu(
-                                context: context,
-                                position: RelativeRect.fromLTRB(
-                                    MediaQuery.of(context).size.width,
-                                    80,
-                                    0,
-                                    0),
-                                items: [
-                                  PopupMenuItem(
-                                    child: Row(
-                                      children: [
-                                        const Icon(Icons.logout, size: 18),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          'Logout',
-                                          style: theme.textTheme.bodyMedium
-                                              ?.copyWith(
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    onTap: () {
-                                      context
-                                          .read<AuthBloc>()
-                                          .add(SignOutEvent());
-                                    },
-                                  ),
-                                ],
-                                elevation: 4,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              );
-                            },
                             child: Container(
                               width: 50,
                               height: 50,
@@ -214,7 +182,7 @@ class HomeScreen extends StatelessWidget {
                       Icon(
                         Icons.location_on,
                         color: colorScheme.primary,
-                        size: 24,
+                        size: 20,
                       ),
                       const SizedBox(width: 8),
                       Text(
@@ -283,9 +251,9 @@ class HomeScreen extends StatelessWidget {
                   Row(
                     children: [
                       Icon(
-                        Icons.recommend,
+                        Icons.thumb_up_rounded,
                         color: colorScheme.primary,
-                        size: 24,
+                        size: 20,
                       ),
                       const SizedBox(width: 8),
                       Text(
@@ -359,7 +327,7 @@ class HomeScreen extends StatelessWidget {
                           Icon(
                             Icons.near_me,
                             color: colorScheme.primary,
-                            size: 24,
+                            size: 20,
                           ),
                           const SizedBox(width: 8),
                           Text(

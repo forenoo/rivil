@@ -13,6 +13,7 @@ import 'package:rivil/features/onboarding/domain/services/onboarding_service.dar
 import 'package:rivil/features/onboarding/presentation/widgets/onboarding_gate.dart';
 import 'package:rivil/features/home/presentation/bloc/category_bloc.dart';
 import 'package:rivil/features/exploration/presentation/screens/exploration_screen.dart';
+import 'package:rivil/features/profile/presentation/screens/profile_screen.dart';
 
 class RivilApp extends StatelessWidget {
   final SupabaseService supabaseService;
@@ -95,8 +96,8 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
   final List<Widget> _screens = const [
     HomeScreen(),
     ExplorationScreen(),
-    Scaffold(body: Center(child: Text('Disimpan'))),
-    Scaffold(body: Center(child: Text('Profil'))),
+    Scaffold(body: Center(child: Text('Favorit'))),
+    ProfileScreen(),
   ];
 
   @override
@@ -127,9 +128,9 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
             label: 'Eksplorasi',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.bookmark_border),
-            activeIcon: Icon(Icons.bookmark),
-            label: 'Disimpan',
+            icon: Icon(Icons.favorite_border),
+            activeIcon: Icon(Icons.favorite),
+            label: 'Favorit',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),

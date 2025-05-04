@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rivil/core/services/supabase_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthGate extends StatelessWidget {
   final Widget authenticatedRoute;
@@ -15,8 +16,8 @@ class AuthGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<AuthState>(
-      stream: supabaseService.authStateChanges,
+    return StreamBuilder(
+      stream: Supabase.instance.client.auth.onAuthStateChange,
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Scaffold(
@@ -26,8 +27,7 @@ class AuthGate extends StatelessWidget {
           );
         }
 
-        final authState = snapshot.data!;
-        return authState == AuthState.authenticated
+        return snapshot.data!.session != null
             ? authenticatedRoute
             : unauthenticatedRoute;
       },
