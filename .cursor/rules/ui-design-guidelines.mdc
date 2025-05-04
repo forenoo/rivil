@@ -1,0 +1,56 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# UI Design Guidelines
+
+## Core Design Principles
+- Employ minimalist design with clean lines and generous whitespace
+- Create modern interfaces with subtle shadows and depth
+- Follow Apple-inspired design language (rounded corners, typography)
+- Use the appTheme and appColor variables for consistent branding
+
+## Color Usage
+- Primary actions should use colorScheme.primary
+- Secondary elements should use muted versions of the primary color
+- Backgrounds should use neutral colors (white, light grays)
+- Use colorScheme properties for semantic meaning (error, success, etc.)
+- Implement proper color contrast for accessibility
+
+## Typography
+- Use a clear type hierarchy with consistent font weights
+- Limit to 3 font sizes per screen (heading, body, caption)
+- Use proper letter spacing for readability (-0.5 for headings)
+- Text should have appropriate contrast against backgrounds
+
+## Component Design
+- Buttons should have rounded corners (12px radius)
+- Text fields should use subtle backgrounds (Colors.grey.shade100)
+- Cards should have minimal borders and soft shadows
+- Icons should be simple and follow a consistent style
+
+## Layout
+- Use responsive layouts that adapt to different screen sizes
+- Employ proper padding (16-24px) around content sections
+- Align elements to a consistent grid
+- Maintain proper spacing between interface elements
+- Ensure touch targets are at least 44x44px
+
+## Animations
+- Use subtle animations for state changes
+- Transitions should be smooth and purposeful
+- Follow the "gentle" animation curve for natural movement
+- Keep animation durations between 200-300ms
+
+## Images and Media
+- Use high-quality imagery with consistent styling
+- Apply subtle rounding to image corners
+- Implement proper image loading states
+- Maintain aspect ratios for media content
+
+
+
+
+
+
