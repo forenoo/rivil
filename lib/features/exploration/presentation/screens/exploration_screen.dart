@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rivil/core/config/app_colors.dart';
 import 'package:rivil/features/exploration/presentation/bloc/exploration_bloc.dart';
+import 'package:rivil/features/exploration/presentation/screens/destination_detail_screen.dart';
 
 class ExplorationScreen extends StatefulWidget {
   const ExplorationScreen({super.key});
@@ -492,7 +493,6 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
             return SafeArea(
               child: Column(
                 children: [
-                  // Top search bar
                   Container(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                     child: Row(
@@ -506,9 +506,9 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
                             child: TextField(
                               controller: _searchController,
                               onChanged: (query) {
-                                context.read<ExplorationBloc>().add(
-                                      SearchDestinationsEvent(query),
-                                    );
+                                context
+                                    .read<ExplorationBloc>()
+                                    .add(SearchDestinationsEvent(query));
                               },
                               decoration: InputDecoration(
                                 fillColor: Colors.grey.shade100,
@@ -801,7 +801,14 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
                 const SizedBox(height: 12),
                 ElevatedButton(
                   onPressed: () {
-                    // Navigate to detail page
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DestinationDetailScreen(
+                          destination: destination,
+                        ),
+                      ),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 40),
