@@ -8,6 +8,10 @@ import 'package:rivil/features/auth/domain/repositories/auth_repository.dart';
 import 'package:rivil/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:rivil/features/auth/presentation/screens/login_screen.dart';
 import 'package:rivil/features/auth/presentation/widgets/auth_gate.dart';
+import 'package:rivil/features/favorite/data/repositories/favorite_repository_impl.dart';
+import 'package:rivil/features/favorite/domain/repository/favorite_repository.dart';
+import 'package:rivil/features/favorite/presentation/bloc/favorites_bloc.dart';
+import 'package:rivil/features/favorite/presentation/screens/favorites_screen.dart';
 import 'package:rivil/features/home/presentation/screens/home_screen.dart';
 import 'package:rivil/features/onboarding/domain/services/onboarding_service.dart';
 import 'package:rivil/features/onboarding/presentation/widgets/onboarding_gate.dart';
@@ -46,6 +50,9 @@ class RivilApp extends StatelessWidget {
         RepositoryProvider<OnboardingService>(
           create: (context) => onboardingService,
         ),
+        RepositoryProvider<FavoriteRepository>(
+          create: (context) => FavoriteRepositoryImpl(),
+        ),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -54,6 +61,10 @@ class RivilApp extends StatelessWidget {
           ),
           BlocProvider<CategoryBloc>(
             create: (context) => CategoryBloc()..add(CategoriesLoaded()),
+          ),
+          BlocProvider<FavoritesBloc>(
+            create: (context) =>
+                FavoritesBloc(context.read<FavoriteRepository>()),
           ),
         ],
         child: Builder(builder: (context) {
@@ -96,7 +107,7 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
   final List<Widget> _screens = const [
     HomeScreen(),
     ExplorationScreen(),
-    Scaffold(body: Center(child: Text('Favorit'))),
+    FavoritesScreen(),
     ProfileScreen(),
   ];
 

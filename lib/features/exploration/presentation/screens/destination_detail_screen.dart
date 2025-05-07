@@ -24,20 +24,17 @@ class DestinationDetailScreen extends StatelessWidget {
                   _buildDestinationTitle(context),
                   const SizedBox(height: 16),
                   _buildOverviewSection(context),
-                  const SizedBox(height: 24),
-                  _buildFacilitiesSection(context),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
                   _buildLocationSection(context),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
                   _buildReviewsSection(context),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
           ),
         ],
       ),
-      bottomNavigationBar: _buildBottomBar(context),
     );
   }
 
@@ -46,40 +43,35 @@ class DestinationDetailScreen extends StatelessWidget {
       expandedHeight: 220,
       pinned: true,
       collapsedHeight: 70,
+      backgroundColor: AppColors.primary,
       flexibleSpace: FlexibleSpaceBar(
-        background: ClipRRect(
-          borderRadius: const BorderRadius.only(
-            bottomLeft: Radius.circular(32),
-            bottomRight: Radius.circular(32),
-          ),
-          child: Stack(
-            children: [
-              // Hero image
-              Image.asset(
-                destination['imageUrl'] as String,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: Colors.grey.shade300,
-                  child: const Icon(Icons.image, size: 50, color: Colors.grey),
+        background: Stack(
+          children: [
+            // Hero image
+            Image.asset(
+              destination['imageUrl'] as String,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                color: Colors.grey.shade300,
+                child: const Icon(Icons.image, size: 50, color: Colors.grey),
+              ),
+            ),
+            // Gradient overlay for better text visibility
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.5),
+                  ],
+                  stops: const [0.7, 1.0],
                 ),
               ),
-              // Gradient overlay for better text visibility
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withOpacity(0.5),
-                    ],
-                    stops: const [0.7, 1.0],
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       leading: Container(
@@ -283,71 +275,6 @@ Dikenal dengan keunikan dan keindahannya, tempat ini telah menjadi tujuan wisata
     );
   }
 
-  Widget _buildFacilitiesSection(BuildContext context) {
-    final facilities = destination['facilities'] as List<String>;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Fasilitas',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: facilities.map((facility) {
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _getFacilityIcon(facility),
-                  const SizedBox(width: 8),
-                  Text(
-                    facility,
-                    style: const TextStyle(
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _getFacilityIcon(String facility) {
-    switch (facility.toLowerCase()) {
-      case 'parkir':
-        return const Icon(Icons.local_parking, size: 16);
-      case 'toilet':
-        return const Icon(Icons.wc, size: 16);
-      case 'musholla':
-        return const Icon(Icons.mosque, size: 16);
-      case 'warung makan':
-        return const Icon(Icons.restaurant, size: 16);
-      case 'wifi':
-        return const Icon(Icons.wifi, size: 16);
-      case 'spot foto':
-        return const Icon(Icons.camera_alt, size: 16);
-      case 'penginapan':
-        return const Icon(Icons.hotel, size: 16);
-      default:
-        return const Icon(Icons.check_circle, size: 16);
-    }
-  }
-
   Widget _buildLocationSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -450,7 +377,7 @@ Dikenal dengan keunikan dan keindahannya, tempat ini telah menjadi tujuan wisata
           ],
         ),
         const SizedBox(height: 12),
-        ...reviews.map((review) => _buildReviewCard(context, review)).toList(),
+        ...reviews.map((review) => _buildReviewCard(context, review)),
       ],
     );
   }
@@ -521,74 +448,6 @@ Dikenal dengan keunikan dan keindahannya, tempat ini telah menjadi tujuan wisata
             review['comment'] as String,
             style: const TextStyle(
               fontSize: 14,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomBar(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Harga Tiket',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
-                  ),
-                ),
-                Text(
-                  'Rp ${destination['price']}',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: ElevatedButton(
-              onPressed: () {
-                // Book now action
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colorScheme.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'Pesan Sekarang',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
             ),
           ),
         ],
