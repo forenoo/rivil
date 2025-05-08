@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rivil/app.dart';
 import 'package:rivil/core/config/app_colors.dart';
 import 'package:rivil/core/constants/destination_mock.dart';
 import 'package:rivil/features/exploration/presentation/screens/destination_detail_screen.dart';
@@ -60,14 +61,14 @@ class HomeScreen extends StatelessWidget {
                             children: [
                               Text(
                                 'Halo, $name',
-                                style: theme.textTheme.bodyLarge?.copyWith(
+                                style: theme.textTheme.bodyMedium?.copyWith(
                                   fontWeight: FontWeight.w500,
                                   color: Colors.white.withOpacity(0.9),
                                 ),
                               ),
                               Text(
                                 'Mau berpetualang?',
-                                style: theme.textTheme.headlineSmall?.copyWith(
+                                style: theme.textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
                                   letterSpacing: -0.5,
@@ -76,6 +77,10 @@ class HomeScreen extends StatelessWidget {
                             ],
                           ),
                           GestureDetector(
+                            onTap: () {
+                              // Use global key to navigate to profile tab
+                              mainNavigationKey.currentState?.navigateToTab(3);
+                            },
                             child: Container(
                               width: 50,
                               height: 50,
@@ -127,7 +132,7 @@ class HomeScreen extends StatelessWidget {
                                   const SizedBox(width: 10),
                                   Text(
                                     'Buat rencana perjalananmu',
-                                    style: theme.textTheme.titleSmall?.copyWith(
+                                    style: theme.textTheme.labelSmall?.copyWith(
                                       color: AppColors.primary,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -189,7 +194,7 @@ class HomeScreen extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         'Destinasi Populer',
-                        style: theme.textTheme.titleLarge?.copyWith(
+                        style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -202,6 +207,7 @@ class HomeScreen extends StatelessWidget {
                     child: Text(
                       'Lihat semua',
                       style: TextStyle(
+                        fontSize: 12,
                         color: colorScheme.primary,
                         fontWeight: FontWeight.bold,
                       ),
@@ -212,7 +218,7 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             SizedBox(
-              height: 210,
+              height: 220,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.only(left: 16),
@@ -245,7 +251,7 @@ class HomeScreen extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         'Rekomendasi Untukmu',
-                        style: theme.textTheme.titleLarge?.copyWith(
+                        style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -258,6 +264,7 @@ class HomeScreen extends StatelessWidget {
                     child: Text(
                       'Lihat semua',
                       style: TextStyle(
+                        fontSize: 12,
                         color: colorScheme.primary,
                         fontWeight: FontWeight.bold,
                       ),
@@ -268,7 +275,7 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             SizedBox(
-              height: 210,
+              height: 220,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.only(left: 16),
@@ -303,7 +310,7 @@ class HomeScreen extends StatelessWidget {
                           const SizedBox(width: 8),
                           Text(
                             'Destinasi Terdekat',
-                            style: theme.textTheme.titleLarge?.copyWith(
+                            style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -316,6 +323,7 @@ class HomeScreen extends StatelessWidget {
                         child: Text(
                           'Lihat semua',
                           style: TextStyle(
+                            fontSize: 12,
                             color: colorScheme.primary,
                             fontWeight: FontWeight.bold,
                           ),
@@ -388,6 +396,7 @@ class HomeScreen extends StatelessWidget {
                 Text(
                   label,
                   style: TextStyle(
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: isSelected ? Colors.white : Colors.grey.shade800,
                   ),
@@ -514,7 +523,7 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   Text(
                     name,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                     maxLines: 1,
@@ -614,7 +623,7 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     Text(
                       name,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                     ),

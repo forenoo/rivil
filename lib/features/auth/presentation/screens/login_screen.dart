@@ -91,7 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Text(
                       'Selamat Datang Kembali 👋',
                       style: TextStyle(
-                        fontSize: 28,
+                        fontSize: 26,
                         fontWeight: FontWeight.w600,
                         color: Colors.grey.shade800,
                         letterSpacing: -0.5,
@@ -101,7 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Text(
                       'Silahkan masuk ke akun Anda untuk melanjutkan',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 14,
                         color: Colors.grey.shade600,
                       ),
                     ),

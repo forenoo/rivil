@@ -87,7 +87,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     Text(
                       'Buat Akun Baru',
                       style: TextStyle(
-                        fontSize: 28,
+                        fontSize: 26,
                         fontWeight: FontWeight.w600,
                         color: Colors.grey.shade800,
                         letterSpacing: -0.5,
@@ -97,7 +97,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     Text(
                       'Isi data Anda untuk mendaftar',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 14,
                         color: Colors.grey.shade600,
                       ),
                     ),

@@ -19,6 +19,10 @@ import 'package:rivil/features/home/presentation/bloc/category_bloc.dart';
 import 'package:rivil/features/exploration/presentation/screens/exploration_screen.dart';
 import 'package:rivil/features/profile/presentation/screens/profile_screen.dart';
 
+// Global key to access MainNavigationWrapper state
+final GlobalKey<_MainNavigationWrapperState> mainNavigationKey =
+    GlobalKey<_MainNavigationWrapperState>();
+
 class RivilApp extends StatelessWidget {
   final SupabaseService supabaseService;
 
@@ -83,7 +87,8 @@ class RivilApp extends StatelessWidget {
               onboardingService: context.read<OnboardingService>(),
               child: AuthGate(
                 supabaseService: supabaseService,
-                authenticatedRoute: const MainNavigationWrapper(),
+                authenticatedRoute:
+                    MainNavigationWrapper(key: mainNavigationKey),
                 unauthenticatedRoute: const LoginScreen(),
               ),
             ),
@@ -111,12 +116,36 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
     ProfileScreen(),
   ];
 
+  void navigateToTab(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: Offset(_currentIndex == 0 ? -1 : 1, 0),
+                end: Offset.zero,
+              ).animate(CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOutQuint,
+              )),
+              child: child,
+            ),
+          );
+        },
+        child: _screens[_currentIndex],
+      ),
       extendBody: true,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
@@ -191,9 +220,7 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
       width: 72,
       child: InkWell(
         onTap: () {
-          setState(() {
-            _currentIndex = index;
-          });
+          navigateToTab(index);
         },
         splashColor: Colors.transparent,
         highlightColor: Colors.transparent,

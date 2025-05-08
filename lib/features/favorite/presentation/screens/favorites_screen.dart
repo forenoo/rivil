@@ -76,6 +76,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   letterSpacing: -0.5,
+                  fontSize: 20,
                 ),
               ),
               const SizedBox(height: 20),
@@ -187,7 +188,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     'Terapkan',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: 18,
                     ),
                   ),
                 ),
@@ -238,6 +239,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       color: isSelected ? AppColors.primary : Colors.black87,
                       fontWeight:
                           isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontSize: 16,
                     ),
                   ),
                 ],
@@ -295,7 +297,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             Text(
               text,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
                 color: isActive ? AppColors.primary : Colors.grey.shade600,
               ),
@@ -422,7 +424,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     hintText: 'Cari destinasi favoritmu...',
                     hintStyle: TextStyle(
                       color: Colors.grey.shade500,
-                      fontSize: 14,
+                      fontSize: 15,
                     ),
                     prefixIcon: Icon(
                       Icons.search,
@@ -449,7 +451,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 child: IconButton(
                   icon: const Icon(Icons.sort),
                   onPressed: _showSortOptionsBottomSheet,
-                  color: Colors.grey.shade700,
+                  color: AppColors.primary,
                   tooltip: 'Urutkan',
                 ),
               ),
@@ -466,7 +468,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       _isGridView = !_isGridView;
                     });
                   },
-                  color: Colors.grey.shade700,
+                  color: AppColors.primary,
                   tooltip: _isGridView ? 'Tampilan list' : 'Tampilan grid',
                 ),
               ),
@@ -482,7 +484,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: 0.75,
+        childAspectRatio: 0.7,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),
@@ -561,6 +563,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                   style: theme.textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
                                     letterSpacing: -0.5,
+                                    fontSize: 17,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -597,6 +600,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                   destination.location,
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     color: Colors.grey.shade600,
+                                    fontSize: 14,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -621,6 +625,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     color: AppColors.primary,
                                     fontWeight: FontWeight.w600,
+                                    fontSize: 14,
                                   ),
                                 ),
                               ),
@@ -635,6 +640,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                 destination.rating.toString(),
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   fontWeight: FontWeight.w600,
+                                  fontSize: 14,
                                 ),
                               ),
                             ],
@@ -645,6 +651,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                             style: theme.textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: AppColors.primary,
+                              fontSize: 15,
                             ),
                           ),
                         ],

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rivil/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:rivil/features/profile/presentation/screens/personal_info_screen.dart';
+import 'package:rivil/features/profile/presentation/screens/user_destinations_screen.dart';
+import 'package:rivil/widgets/slide_page_route.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -8,67 +11,70 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    // final colorScheme = theme.colorScheme;
-
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: Text(
-          'Profil',
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           child: Column(
             children: [
-              // Profile Header
-              _buildProfileHeader(context),
-              const SizedBox(height: 32),
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 30),
+                      _buildProfileHeader(context),
+                      const SizedBox(height: 40),
+                      _buildMenuItem(
+                        context: context,
+                        icon: Icons.person_outline_rounded,
+                        title: 'Informasi Pribadi',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            SlidePageRoute(
+                              child: const PersonalInfoScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildMenuItem(
+                        context: context,
+                        icon: Icons.place_outlined,
+                        title: 'Destinasi Yang Anda Tambahkan',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            SlidePageRoute(
+                              child: const UserDestinationsScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildMenuItem(
+                        context: context,
+                        icon: Icons.map_outlined,
+                        title: 'Daftar Rencana Perjalanan',
+                        onTap: () {
+                          // Navigate to trip plan list page
+                        },
+                      ),
+                      _buildMenuItem(
+                        context: context,
+                        icon: Icons.settings_outlined,
+                        title: 'Pengaturan',
+                        onTap: () {
+                          // Navigate to settings page
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
+              ),
 
-              // Menu Items
-              _buildMenuItem(
-                context: context,
-                icon: Icons.person_outline,
-                title: 'Informasi Pribadi',
-                onTap: () {
-                  // Navigate to personal info page
-                },
-              ),
-              _buildMenuItem(
-                context: context,
-                icon: Icons.favorite_border,
-                title: 'Destinasi Favorit',
-                onTap: () {
-                  // Navigate to favorites page
-                },
-              ),
-              _buildMenuItem(
-                context: context,
-                icon: Icons.history,
-                title: 'Riwayat Perjalanan',
-                onTap: () {
-                  // Navigate to trip history page
-                },
-              ),
-              _buildMenuItem(
-                context: context,
-                icon: Icons.settings_outlined,
-                title: 'Pengaturan',
-                onTap: () {
-                  // Navigate to settings page
-                },
-              ),
-
-              const Spacer(),
-
-              // Logout Button
+              // Logout Button at the bottom
               _buildLogoutButton(context),
             ],
           ),
@@ -81,14 +87,14 @@ class ProfileScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final session = Supabase.instance.client.auth.currentSession;
 
-    String name = 'Pengguna';
+    String name = 'User';
     String email = '';
     String? avatarUrl;
 
     if (session != null) {
       final userData = session.user.userMetadata;
       if (userData != null) {
-        name = userData['name'] ?? 'Pengguna';
+        name = userData['name'] ?? 'User';
         avatarUrl = userData['avatar_url'];
       }
       email = session.user.email ?? '';
@@ -96,25 +102,39 @@ class ProfileScreen extends StatelessWidget {
 
     return Column(
       children: [
-        CircleAvatar(
-          radius: 50,
-          backgroundColor: Colors.grey.shade200,
-          backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
-              ? NetworkImage(avatarUrl) as ImageProvider
-              : const AssetImage('assets/images/avatar_fallback.png'),
+        Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 15,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: CircleAvatar(
+            radius: 45,
+            backgroundColor: Colors.grey.shade100,
+            backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
+                ? NetworkImage(avatarUrl) as ImageProvider
+                : const AssetImage('assets/images/avatar_fallback.png'),
+          ),
         ),
         const SizedBox(height: 16),
         Text(
           name,
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.5,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           email,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: Colors.grey.shade600,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: Colors.grey.shade500,
+            letterSpacing: -0.3,
           ),
         ),
       ],
@@ -131,48 +151,49 @@ class ProfileScreen extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 1),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.grey.shade200,
-          width: 1,
+        color: Colors.white,
+        border: Border(
+          bottom: BorderSide(
+            color: Colors.grey.shade200,
+            width: 1,
+          ),
         ),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: colorScheme.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    color: colorScheme.primary.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     icon,
                     color: colorScheme.primary,
-                    size: 20,
+                    size: 18,
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 14),
                 Text(
                   title,
-                  style: theme.textTheme.titleMedium?.copyWith(
+                  style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w500,
+                    letterSpacing: -0.3,
                   ),
                 ),
                 const Spacer(),
                 Icon(
-                  Icons.arrow_forward_ios,
-                  size: 16,
-                  color: Colors.grey.shade400,
+                  Icons.chevron_right_rounded,
+                  size: 18,
+                  color: Colors.grey.shade300,
                 ),
               ],
             ),
@@ -185,7 +206,7 @@ class ProfileScreen extends StatelessWidget {
   Widget _buildLogoutButton(BuildContext context) {
     return Container(
       width: double.infinity,
-      height: 50,
+      height: 48,
       margin: const EdgeInsets.only(bottom: 16),
       child: ElevatedButton(
         onPressed: () {
@@ -196,13 +217,16 @@ class ProfileScreen extends StatelessWidget {
           foregroundColor: Colors.red,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
+            side: BorderSide(color: Colors.red.shade200),
           ),
         ),
-        child: const Text(
+        child: Text(
           'Keluar',
           style: TextStyle(
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.3,
+            fontSize: 14,
           ),
         ),
       ),
@@ -213,15 +237,17 @@ class ProfileScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Keluar'),
-        content: const Text('Apakah Anda yakin ingin keluar dari akun?'),
+        title: const Text('Keluar', style: TextStyle(fontSize: 16)),
+        content: const Text('Apakah Anda yakin ingin keluar dari akun Anda?',
+            style: TextStyle(fontSize: 14)),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
+        contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
+            child: const Text('Batal', style: TextStyle(fontSize: 14)),
           ),
           TextButton(
             onPressed: () {
@@ -231,7 +257,7 @@ class ProfileScreen extends StatelessWidget {
             style: TextButton.styleFrom(
               foregroundColor: Colors.red,
             ),
-            child: const Text('Keluar'),
+            child: const Text('Keluar', style: TextStyle(fontSize: 14)),
           ),
         ],
       ),

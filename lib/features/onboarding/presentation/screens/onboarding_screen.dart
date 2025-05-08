@@ -124,7 +124,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           _onboardingSteps[_currentPage]['description']!,
                           style: TextStyle(
                             fontWeight: FontWeight.w400,
-                            fontSize: 18,
+                            fontSize: 16,
                             height: 1.5,
                             letterSpacing: -0.2,
                             color: Colors.grey[500],
