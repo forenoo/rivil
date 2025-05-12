@@ -14,11 +14,15 @@ class FavoritesLoading extends FavoritesState {}
 
 class FavoritesLoaded extends FavoritesState {
   final List<FavoriteDestination> favorites;
+  final List<FavoriteDestination> filteredFavorites;
 
-  const FavoritesLoaded(this.favorites);
+  FavoritesLoaded({
+    required this.favorites,
+    List<FavoriteDestination>? filteredFavorites,
+  }) : filteredFavorites = filteredFavorites ?? favorites;
 
   @override
-  List<Object> get props => [favorites];
+  List<Object> get props => [favorites, filteredFavorites];
 }
 
 class FavoritesError extends FavoritesState {
@@ -50,13 +54,13 @@ class FavoriteRemoved extends FavoritesState {
 
 class FavoriteCheckResult extends FavoritesState {
   final bool isFavorite;
-  final String destinationName;
+  final int destinationId;
 
   const FavoriteCheckResult({
     required this.isFavorite,
-    required this.destinationName,
+    required this.destinationId,
   });
 
   @override
-  List<Object> get props => [isFavorite, destinationName];
+  List<Object> get props => [isFavorite, destinationId];
 }

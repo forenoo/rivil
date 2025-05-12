@@ -71,7 +71,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               Expanded(
                 child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
+                  ),
                   child: Column(
                     children: [
                       const SizedBox(height: 30),

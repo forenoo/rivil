@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rivil/core/config/app_colors.dart';
 import 'package:rivil/features/trip_planning/presentation/screens/trip_results_screen.dart';
+import 'package:rivil/widgets/slide_page_route.dart';
 
 class TripPlannerScreen extends StatefulWidget {
   const TripPlannerScreen({super.key});
@@ -56,21 +57,29 @@ class _TripPlannerScreenState extends State<TripPlannerScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        title: Text(
+        title: const Text(
           'Rencana Perjalanan',
-          style: theme.textTheme.titleMedium?.copyWith(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
+            fontSize: 17,
+            letterSpacing: -0.5,
           ),
         ),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        shadowColor: Colors.transparent,
+        foregroundColor: colorScheme.primary,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          icon: const Icon(Icons.arrow_back_ios, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -266,8 +275,8 @@ class _TripPlannerScreenState extends State<TripPlannerScreen> {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) => const TripResultsScreen(),
+                          SlidePageRoute(
+                            child: const TripResultsScreen(),
                           ),
                         );
                       },

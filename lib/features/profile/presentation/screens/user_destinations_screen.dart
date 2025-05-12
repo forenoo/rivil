@@ -10,21 +10,23 @@ class UserDestinationsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: Text(
+        title: const Text(
           'Destinasi Yang Anda Tambahkan',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 17,
             letterSpacing: -0.5,
           ),
         ),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        shadowColor: Colors.transparent,
+        foregroundColor: colorScheme.primary,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded, size: 16),
-          onPressed: () => Navigator.pop(context),
-          splashRadius: 20,
-          padding: EdgeInsets.zero,
-          color: colorScheme.primary,
+          icon: const Icon(Icons.arrow_back_ios, size: 20),
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: SafeArea(

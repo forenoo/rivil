@@ -28,6 +28,28 @@ class LoadNearbyDestinations extends DestinationEvent {
   List<Object?> get props => [latitude, longitude];
 }
 
+class ToggleFavoriteEvent extends DestinationEvent {
+  final int destinationId;
+  final bool isFavorite;
+
+  const ToggleFavoriteEvent({
+    required this.destinationId,
+    required this.isFavorite,
+  });
+
+  @override
+  List<Object?> get props => [destinationId, isFavorite];
+}
+
+class LoadFavoritesEvent extends DestinationEvent {
+  final Map<int, bool> favorites;
+
+  const LoadFavoritesEvent(this.favorites);
+
+  @override
+  List<Object?> get props => [favorites];
+}
+
 // States
 abstract class DestinationState extends Equatable {
   const DestinationState();
@@ -45,12 +67,14 @@ class DestinationsLoaded extends DestinationState {
   final List<Map<String, dynamic>> popularDestinations;
   final List<Map<String, dynamic>> recommendedDestinations;
   final List<Map<String, dynamic>> nearbyDestinations;
+  final Map<int, bool> favorites;
 
   const DestinationsLoaded({
     required this.destinations,
     required this.popularDestinations,
     required this.recommendedDestinations,
     required this.nearbyDestinations,
+    this.favorites = const {},
   });
 
   @override
@@ -59,6 +83,7 @@ class DestinationsLoaded extends DestinationState {
         popularDestinations,
         recommendedDestinations,
         nearbyDestinations,
+        favorites,
       ];
 
   DestinationsLoaded copyWith({
@@ -66,6 +91,7 @@ class DestinationsLoaded extends DestinationState {
     List<Map<String, dynamic>>? popularDestinations,
     List<Map<String, dynamic>>? recommendedDestinations,
     List<Map<String, dynamic>>? nearbyDestinations,
+    Map<int, bool>? favorites,
   }) {
     return DestinationsLoaded(
       destinations: destinations ?? this.destinations,
@@ -73,6 +99,7 @@ class DestinationsLoaded extends DestinationState {
       recommendedDestinations:
           recommendedDestinations ?? this.recommendedDestinations,
       nearbyDestinations: nearbyDestinations ?? this.nearbyDestinations,
+      favorites: favorites ?? this.favorites,
     );
   }
 }
@@ -96,6 +123,8 @@ class DestinationBloc extends Bloc<DestinationEvent, DestinationState> {
     on<LoadPopularDestinations>(_onLoadPopularDestinations);
     on<LoadRecommendedDestinations>(_onLoadRecommendedDestinations);
     on<LoadNearbyDestinations>(_onLoadNearbyDestinations);
+    on<ToggleFavoriteEvent>(_onToggleFavorite);
+    on<LoadFavoritesEvent>(_onLoadFavorites);
   }
 
   Future<void> _onLoadDestinations(
@@ -123,6 +152,7 @@ class DestinationBloc extends Bloc<DestinationEvent, DestinationState> {
         popularDestinations: popularDestinations,
         recommendedDestinations: recommendedDestinations,
         nearbyDestinations: nearbyDestinations,
+        favorites: {}, // Initialize with empty favorites map
       ));
     } catch (e) {
       emit(DestinationError(e.toString()));
@@ -191,6 +221,31 @@ class DestinationBloc extends Bloc<DestinationEvent, DestinationState> {
       } catch (e) {
         emit(DestinationError(e.toString()));
       }
+    }
+  }
+
+  void _onToggleFavorite(
+    ToggleFavoriteEvent event,
+    Emitter<DestinationState> emit,
+  ) {
+    if (state is DestinationsLoaded) {
+      final currentState = state as DestinationsLoaded;
+
+      // Create a new map with the updated favorite status
+      final newFavorites = Map<int, bool>.from(currentState.favorites);
+      newFavorites[event.destinationId] = event.isFavorite;
+
+      emit(currentState.copyWith(favorites: newFavorites));
+    }
+  }
+
+  void _onLoadFavorites(
+    LoadFavoritesEvent event,
+    Emitter<DestinationState> emit,
+  ) {
+    if (state is DestinationsLoaded) {
+      final currentState = state as DestinationsLoaded;
+      emit(currentState.copyWith(favorites: event.favorites));
     }
   }
 }

@@ -20,6 +20,11 @@ import 'package:rivil/features/home/data/repositories/destination_repository_imp
 import 'package:rivil/features/home/domain/repository/destination_repository.dart';
 import 'package:rivil/features/exploration/presentation/screens/exploration_screen.dart';
 import 'package:rivil/features/profile/presentation/screens/profile_screen.dart';
+import 'package:rivil/features/exploration/data/repositories/exploration_repository_impl.dart';
+import 'package:rivil/features/exploration/domain/repositories/exploration_repository.dart';
+import 'package:rivil/features/exploration/presentation/bloc/exploration_bloc.dart';
+import 'package:rivil/features/add_destination/presentation/screens/add_destination_screen.dart';
+import 'package:rivil/widgets/slide_page_route.dart';
 
 final GlobalKey<_MainNavigationWrapperState> mainNavigationKey =
     GlobalKey<_MainNavigationWrapperState>();
@@ -56,11 +61,15 @@ class RivilApp extends StatelessWidget {
           create: (context) => onboardingService,
         ),
         RepositoryProvider<FavoriteRepository>(
-          create: (context) => FavoriteRepositoryImpl(),
+          create: (context) => FavoriteRepositoryImpl(supabaseService.client),
         ),
         RepositoryProvider<DestinationRepository>(
           create: (context) =>
               DestinationRepositoryImpl(supabaseService.client),
+        ),
+        RepositoryProvider<ExplorationRepository>(
+          create: (context) =>
+              ExplorationRepositoryImpl(supabaseService.client),
         ),
       ],
       child: MultiBlocProvider(
@@ -70,12 +79,17 @@ class RivilApp extends StatelessWidget {
           ),
           BlocProvider<FavoritesBloc>(
             create: (context) =>
-                FavoritesBloc(context.read<FavoriteRepository>()),
+                FavoritesBloc(repository: context.read<FavoriteRepository>()),
           ),
           BlocProvider<DestinationBloc>(
             create: (context) => DestinationBloc(
               context.read<DestinationRepository>(),
             )..add(LoadDestinations()),
+          ),
+          BlocProvider<ExplorationBloc>(
+            create: (context) => ExplorationBloc(
+              context.read<ExplorationRepository>(),
+            ),
           ),
         ],
         child: Builder(builder: (context) {
@@ -196,7 +210,14 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: InkWell(
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        SlidePageRoute(
+                          child: const AddDestinationScreen(),
+                        ),
+                      );
+                    },
                     customBorder: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),

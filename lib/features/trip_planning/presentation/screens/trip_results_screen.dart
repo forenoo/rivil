@@ -10,31 +10,29 @@ class TripResultsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        title: const Text(
+          'Hasil Rencana Perjalanan',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 17,
+            letterSpacing: -0.5,
+          ),
+        ),
+        centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
-        centerTitle: false,
-        title: Text(
-          'Rencana Perjalananmu',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        scrolledUnderElevation: 0,
+        shadowColor: Colors.transparent,
+        foregroundColor: colorScheme.primary,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          icon: const Icon(Icons.arrow_back_ios, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.share_outlined, color: Colors.black87),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.save_alt_outlined, color: Colors.black87),
-            onPressed: () {},
-          ),
-        ],
       ),
       body: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

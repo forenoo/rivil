@@ -9,6 +9,7 @@ import 'package:rivil/features/exploration/presentation/screens/destination_deta
 import 'package:rivil/features/home/presentation/bloc/destination_bloc.dart';
 import 'package:rivil/features/home/presentation/widgets/home_skeleton_loader.dart';
 import 'package:rivil/features/trip_planning/presentation/screens/trip_planner_screen.dart';
+import 'package:rivil/widgets/slide_page_route.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -30,6 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
     context.read<DestinationBloc>().add(LoadDestinations());
     _requestLocationPermission();
     _loadUserProfile();
+    _loadFavorites();
   }
 
   Future<void> _loadUserProfile() async {
@@ -86,40 +88,82 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Method to check if a destination is favorited by the current user
-  Future<bool> _isDestinationFavorited(int destinationId) async {
-    final currentUser = Supabase.instance.client.auth.currentUser;
-    if (currentUser == null) return false;
-
-    final response = await Supabase.instance.client
-        .from('favorite_destination')
-        .select()
-        .eq('user_id', currentUser.id)
-        .eq('destination_id', destinationId)
-        .limit(1);
-
-    return response.isNotEmpty;
+  // Method to check if a destination is favorited using BLoC state
+  bool _isDestinationFavorited(int destinationId) {
+    final state = context.read<DestinationBloc>().state;
+    if (state is DestinationsLoaded) {
+      return state.favorites[destinationId] ?? false;
+    }
+    return false;
   }
 
-  // Method to toggle favorite status for a destination
+  // Method to toggle favorite status for a destination using BLoC
   Future<void> _toggleFavorite(int destinationId) async {
     final currentUser = Supabase.instance.client.auth.currentUser;
     if (currentUser == null) return;
 
-    final isFavorited = await _isDestinationFavorited(destinationId);
+    final isFavorited = _isDestinationFavorited(destinationId);
 
-    if (isFavorited) {
-      // Delete the favorite entry
-      await Supabase.instance.client
+    // Optimistically update the UI first
+    context.read<DestinationBloc>().add(
+          ToggleFavoriteEvent(
+            destinationId: destinationId,
+            isFavorite: !isFavorited,
+          ),
+        );
+
+    try {
+      if (isFavorited) {
+        // Delete the favorite entry
+        await Supabase.instance.client
+            .from('favorite_destination')
+            .delete()
+            .eq('user_id', currentUser.id)
+            .eq('destination_id', destinationId);
+      } else {
+        // Create a new favorite entry
+        await Supabase.instance.client.from('favorite_destination').insert(
+            {'user_id': currentUser.id, 'destination_id': destinationId});
+      }
+    } catch (e) {
+      // If the database operation fails, revert the UI change
+      context.read<DestinationBloc>().add(
+            ToggleFavoriteEvent(
+              destinationId: destinationId,
+              isFavorite: isFavorited,
+            ),
+          );
+
+      // Show error message if needed
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update favorite status'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Load all user's favorites at once
+  Future<void> _loadFavorites() async {
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    if (currentUser == null) return;
+
+    try {
+      final response = await Supabase.instance.client
           .from('favorite_destination')
-          .delete()
-          .eq('user_id', currentUser.id)
-          .eq('destination_id', destinationId);
-    } else {
-      // Create a new favorite entry
-      await Supabase.instance.client
-          .from('favorite_destination')
-          .insert({'user_id': currentUser.id, 'destination_id': destinationId});
+          .select()
+          .eq('user_id', currentUser.id);
+
+      final Map<int, bool> favorites = {};
+      for (var favorite in response) {
+        favorites[favorite['destination_id']] = true;
+      }
+
+      // Update BLoC with all favorites
+      context.read<DestinationBloc>().add(LoadFavoritesEvent(favorites));
+    } catch (e) {
+      print('Error loading favorites: $e');
     }
   }
 
@@ -231,9 +275,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               onTap: () {
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const TripPlannerScreen(),
+                                  SlidePageRoute(
+                                    child: const TripPlannerScreen(),
                                   ),
                                 );
                               },
@@ -272,37 +315,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.location_on,
-                              color: colorScheme.primary,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Destinasi Populer',
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+                        Icon(
+                          Icons.location_on,
+                          color: colorScheme.primary,
+                          size: 20,
                         ),
-                        GestureDetector(
-                          onTap: () {
-                            // TODO: Navigate to see all destinations
-                          },
-                          child: Text(
-                            'Lihat semua',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Destinasi Populer',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
                           ),
-                        )
+                        ),
                       ],
                     ),
                   ),
@@ -328,37 +353,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.thumb_up_rounded,
-                              color: colorScheme.primary,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Rekomendasi Untukmu',
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+                        Icon(
+                          Icons.thumb_up_rounded,
+                          color: colorScheme.primary,
+                          size: 20,
                         ),
-                        GestureDetector(
-                          onTap: () {
-                            // TODO: Navigate to see all recommended destinations
-                          },
-                          child: Text(
-                            'Lihat semua',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Rekomendasi Untukmu',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
                           ),
-                        )
+                        ),
                       ],
                     ),
                   ),
@@ -388,35 +395,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.near_me,
-                                  color: colorScheme.primary,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Destinasi Terdekat',
-                                  style: theme.textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
+                            Icon(
+                              Icons.near_me,
+                              color: colorScheme.primary,
+                              size: 20,
                             ),
-                            GestureDetector(
-                              onTap: () {
-                                // TODO: Navigate to see all destinations
-                              },
-                              child: Text(
-                                'Lihat semua',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: colorScheme.primary,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Destinasi Terdekat',
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ],
@@ -506,14 +495,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => DestinationDetailScreen(
-              destination: destination,
-            ),
-          ),
-        );
+        _navigateToDetail(destination);
       },
       child: Container(
         width: 200,
@@ -562,17 +544,24 @@ class _HomeScreenState extends State<HomeScreen> {
                 Positioned(
                   top: 12,
                   right: 12,
-                  child: FutureBuilder<bool>(
-                    future: _isDestinationFavorited(destinationId),
-                    builder: (context, snapshot) {
-                      final isFavorite = snapshot.data ?? false;
+                  child: BlocBuilder<DestinationBloc, DestinationState>(
+                    buildWhen: (previous, current) {
+                      if (previous is DestinationsLoaded &&
+                          current is DestinationsLoaded) {
+                        // Only rebuild if the favorite status for this destination has changed
+                        return previous.favorites[destinationId] !=
+                            current.favorites[destinationId];
+                      }
+                      return true;
+                    },
+                    builder: (context, state) {
+                      final isFavorite = state is DestinationsLoaded
+                          ? (state.favorites[destinationId] ?? false)
+                          : false;
+
                       return GestureDetector(
-                        onTap: () async {
-                          await _toggleFavorite(destinationId);
-                          // Refresh the UI after toggling favorite status
-                          // This is a simple approach; for a more efficient solution,
-                          // consider using a state management approach
-                          (context as Element).markNeedsBuild();
+                        onTap: () {
+                          _toggleFavorite(destinationId);
                         },
                         child: Container(
                           decoration: const BoxDecoration(
@@ -677,6 +666,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final location = destination['address'] as String? ?? '';
     final distance = '${destination['distance']} km';
     final imageUrl = destination['image_url'] as String?;
+    final destinationId = destination['id'] as int;
 
     return Container(
       decoration: BoxDecoration(
@@ -690,14 +680,7 @@ class _HomeScreenState extends State<HomeScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       child: InkWell(
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => DestinationDetailScreen(
-                destination: destination,
-              ),
-            ),
-          );
+          _navigateToDetail(destination);
         },
         borderRadius: BorderRadius.circular(16),
         child: Padding(
@@ -718,15 +701,21 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: imageUrl != null && imageUrl.isNotEmpty
                           ? Image.network(
                               imageUrl,
+                              width: 80,
+                              height: 80,
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) =>
                                   Container(
+                                width: 80,
+                                height: 80,
                                 color: Colors.grey.shade300,
                                 child:
                                     const Icon(Icons.image, color: Colors.grey),
                               ),
                             )
                           : Container(
+                              width: 80,
+                              height: 80,
                               color: Colors.grey.shade300,
                               child:
                                   const Icon(Icons.image, color: Colors.grey),
@@ -741,11 +730,54 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      name,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            name,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
+                        ),
+                        // Add favorite button
+                        BlocBuilder<DestinationBloc, DestinationState>(
+                          buildWhen: (previous, current) {
+                            if (previous is DestinationsLoaded &&
+                                current is DestinationsLoaded) {
+                              return previous.favorites[destinationId] !=
+                                  current.favorites[destinationId];
+                            }
+                            return true;
+                          },
+                          builder: (context, state) {
+                            final isFavorite = state is DestinationsLoaded
+                                ? (state.favorites[destinationId] ?? false)
+                                : false;
+
+                            return GestureDetector(
+                              onTap: () {
+                                _toggleFavorite(destinationId);
+                              },
+                              child: Icon(
+                                isFavorite
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                                color: isFavorite
+                                    ? Colors.red
+                                    : Colors.grey.shade700,
+                                size: 16,
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 6),
                     Row(
@@ -836,6 +868,17 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  void _navigateToDetail(Map<String, dynamic> destination) {
+    Navigator.push(
+      context,
+      SlidePageRoute(
+        child: DestinationDetailScreen(
+          destinationId: destination['id'],
         ),
       ),
     );

@@ -8,11 +8,11 @@ import 'package:rivil/features/favorite/presentation/bloc/favorites_event.dart';
 import 'package:rivil/features/favorite/presentation/bloc/favorites_state.dart';
 import 'package:rivil/features/favorite/presentation/widgets/empty_favorites.dart';
 import 'package:rivil/features/favorite/presentation/widgets/favorite_destination_card.dart';
+import 'package:rivil/widgets/slide_page_route.dart';
 
 enum SortCategory {
   name,
   rating,
-  price,
   distance,
 }
 
@@ -24,10 +24,10 @@ class FavoritesScreen extends StatefulWidget {
 }
 
 class _FavoritesScreenState extends State<FavoritesScreen> {
-  final List<FavoriteDestination> _visibleItems = [];
   bool _isGridView = true;
   SortCategory _currentSortCategory = SortCategory.name;
   bool _isAscending = true;
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -38,9 +38,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   void _navigateToDetail(Map<String, dynamic> destination) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => DestinationDetailScreen(
-          destination: destination,
+      SlidePageRoute(
+        child: DestinationDetailScreen(
+          destinationId: destination['destination_id'],
         ),
       ),
     );
@@ -123,27 +123,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 },
               ),
               _buildSortCategoryRow(
-                title: 'Harga',
-                icon: Icons.attach_money,
-                category: SortCategory.price,
-                selectedCategory: selectedCategory,
-                isAscending: selectedCategory == SortCategory.price
-                    ? selectedAscending
-                    : true,
-                ascendingText: 'Termurah',
-                descendingText: 'Termahal',
-                onCategorySelected: () {
-                  setSheetState(() {
-                    selectedCategory = SortCategory.price;
-                  });
-                },
-                onDirectionChanged: (isAsc) {
-                  setSheetState(() {
-                    selectedAscending = isAsc;
-                  });
-                },
-              ),
-              _buildSortCategoryRow(
                 title: 'Jarak',
                 icon: Icons.place,
                 category: SortCategory.distance,
@@ -174,7 +153,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       _isAscending = selectedAscending;
                     });
                     Navigator.pop(context);
-                    _sortFavorites();
+                    // Reload the state to trigger sorting
+                    context.read<FavoritesBloc>().add(LoadFavorites());
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
@@ -314,38 +294,35 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     );
   }
 
-  void _sortFavorites() {
-    // Sort based on category and direction
+  List<FavoriteDestination> _sortFavorites(List<FavoriteDestination> items) {
+    // Sort based on category and direction without setState
+    List<FavoriteDestination> sortedItems = List.from(items);
+
     switch (_currentSortCategory) {
       case SortCategory.name:
         if (_isAscending) {
-          _visibleItems.sort((a, b) => a.name.compareTo(b.name));
+          sortedItems.sort((a, b) => a.name.compareTo(b.name));
         } else {
-          _visibleItems.sort((a, b) => b.name.compareTo(a.name));
+          sortedItems.sort((a, b) => b.name.compareTo(a.name));
         }
         break;
       case SortCategory.rating:
         if (_isAscending) {
-          _visibleItems.sort((a, b) => a.rating.compareTo(b.rating));
+          sortedItems.sort((a, b) => a.rating.compareTo(b.rating));
         } else {
-          _visibleItems.sort((a, b) => b.rating.compareTo(a.rating));
-        }
-        break;
-      case SortCategory.price:
-        if (_isAscending) {
-          _visibleItems.sort((a, b) => a.price.compareTo(b.price));
-        } else {
-          _visibleItems.sort((a, b) => b.price.compareTo(a.price));
+          sortedItems.sort((a, b) => b.rating.compareTo(a.rating));
         }
         break;
       case SortCategory.distance:
         if (_isAscending) {
-          _visibleItems.sort((a, b) => a.distance.compareTo(b.distance));
+          sortedItems.sort((a, b) => a.distance.compareTo(b.distance));
         } else {
-          _visibleItems.sort((a, b) => b.distance.compareTo(a.distance));
+          sortedItems.sort((a, b) => b.distance.compareTo(a.distance));
         }
         break;
     }
+
+    return sortedItems;
   }
 
   @override
@@ -371,24 +348,31 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       return EmptyFavorites(
                         onExplore: () {
                           // Navigate to exploration screen
+                          Navigator.pop(context);
                         },
                       );
                     }
 
-                    _visibleItems.clear();
-                    _visibleItems.addAll(state.favorites);
-                    _sortFavorites();
+                    // Get the data based on search state
+                    final itemsToDisplay = _searchQuery.isEmpty
+                        ? state.favorites
+                        : state.filteredFavorites;
 
+                    // Sort the items without using setState
+                    final sortedItems = _sortFavorites(itemsToDisplay);
+
+                    // Display the sorted items
                     return _isGridView
-                        ? _buildGridView(theme)
-                        : _buildListView(theme);
+                        ? _buildGridView(theme, sortedItems)
+                        : _buildListView(theme, sortedItems);
                   }
 
                   if (state is FavoritesError) {
                     return Center(
                       child: Text(
-                        'Terjadi kesalahan saat memuat favorit',
+                        'Terjadi kesalahan saat memuat favorit: ${state.message}',
                         style: theme.textTheme.bodyLarge,
+                        textAlign: TextAlign.center,
                       ),
                     );
                   }
@@ -408,9 +392,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   Widget _buildHeader(ThemeData theme) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -420,6 +401,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 child: TextField(
                   decoration: InputDecoration(
                     fillColor: Colors.grey.shade100,
+                    filled: true,
                     hintText: 'Cari destinasi favoritmu...',
                     hintStyle: TextStyle(
                       color: Colors.grey.shade500,
@@ -437,7 +419,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     contentPadding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                   onChanged: (query) {
-                    // Filter favorites
+                    setState(() {
+                      _searchQuery = query;
+                    });
+                    context.read<FavoritesBloc>().add(SearchFavorites(query));
                   },
                 ),
               ),
@@ -478,24 +463,24 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     );
   }
 
-  Widget _buildGridView(ThemeData theme) {
+  Widget _buildGridView(ThemeData theme, List<FavoriteDestination> items) {
     return GridView.builder(
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: 0.7,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
+        childAspectRatio: 0.8,
+        crossAxisSpacing: 6,
+        mainAxisSpacing: 6,
       ),
-      itemCount: _visibleItems.length,
+      itemCount: items.length,
       itemBuilder: (context, index) {
-        final destination = _visibleItems[index];
+        final destination = items[index];
         return FavoriteDestinationCard(
           destination: destination,
           onTap: () => _navigateToDetail(destination.toMap()),
           onFavoriteToggle: () {
             context.read<FavoritesBloc>().add(
-                  RemoveFromFavorites(destination.name),
+                  RemoveFromFavorites(destination.destinationId),
                 );
           },
         );
@@ -503,12 +488,12 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     );
   }
 
-  Widget _buildListView(ThemeData theme) {
+  Widget _buildListView(ThemeData theme, List<FavoriteDestination> items) {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: _visibleItems.length,
+      itemCount: items.length,
       itemBuilder: (context, index) {
-        final destination = _visibleItems[index];
+        final destination = items[index];
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
@@ -534,7 +519,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     // Image
                     ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: Image.asset(
+                      child: Image.network(
                         destination.imageUrl,
                         width: 100,
                         height: 100,
@@ -576,7 +561,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                 ),
                                 onPressed: () {
                                   context.read<FavoritesBloc>().add(
-                                        RemoveFromFavorites(destination.name),
+                                        RemoveFromFavorites(
+                                            destination.destinationId),
                                       );
                                 },
                                 constraints: const BoxConstraints(),
@@ -585,7 +571,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 4),
                           Row(
                             children: [
                               Icon(
@@ -607,7 +592,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 12),
                           Row(
                             children: [
                               Container(
@@ -643,15 +628,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                 ),
                               ),
                             ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Rp${destination.price.toInt()}',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primary,
-                              fontSize: 15,
-                            ),
                           ),
                         ],
                       ),

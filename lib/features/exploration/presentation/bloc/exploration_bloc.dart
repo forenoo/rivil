@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:rivil/core/constants/destination_mock.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:rivil/features/exploration/domain/repositories/exploration_repository.dart';
 
 // Events
 abstract class ExplorationEvent extends Equatable {
@@ -8,6 +9,18 @@ abstract class ExplorationEvent extends Equatable {
 
   @override
   List<Object?> get props => [];
+}
+
+class LoadExplorationEvent extends ExplorationEvent {
+  const LoadExplorationEvent();
+}
+
+class LoadMoreDestinationsEvent extends ExplorationEvent {
+  const LoadMoreDestinationsEvent();
+}
+
+class LoadCategoriesEvent extends ExplorationEvent {
+  const LoadCategoriesEvent();
 }
 
 class SearchDestinationsEvent extends ExplorationEvent {
@@ -21,29 +34,17 @@ class SearchDestinationsEvent extends ExplorationEvent {
 
 class FilterDestinationsEvent extends ExplorationEvent {
   final String? category;
-  final double? minPrice;
-  final double? maxPrice;
-  final double? maxDistance;
   final double? minRating;
-  final List<String>? facilities;
 
   const FilterDestinationsEvent({
     this.category,
-    this.minPrice,
-    this.maxPrice,
-    this.maxDistance,
     this.minRating,
-    this.facilities,
   });
 
   @override
   List<Object?> get props => [
         category,
-        minPrice,
-        maxPrice,
-        maxDistance,
         minRating,
-        facilities,
       ];
 }
 
@@ -54,6 +55,41 @@ class SortDestinationsEvent extends ExplorationEvent {
 
   @override
   List<Object?> get props => [sortOption];
+}
+
+class ToggleFavoriteEvent extends ExplorationEvent {
+  final int destinationId;
+  final bool isFavorite;
+
+  const ToggleFavoriteEvent({
+    required this.destinationId,
+    required this.isFavorite,
+  });
+
+  @override
+  List<Object?> get props => [destinationId, isFavorite];
+}
+
+class LoadFavoritesEvent extends ExplorationEvent {
+  final Map<int, bool> favorites;
+
+  const LoadFavoritesEvent(this.favorites);
+
+  @override
+  List<Object?> get props => [favorites];
+}
+
+class UpdateDistancesEvent extends ExplorationEvent {
+  final double latitude;
+  final double longitude;
+
+  const UpdateDistancesEvent({
+    required this.latitude,
+    required this.longitude,
+  });
+
+  @override
+  List<Object?> get props => [latitude, longitude];
 }
 
 enum SortOption {
@@ -75,63 +111,106 @@ class ExplorationInitial extends ExplorationState {}
 
 class ExplorationLoading extends ExplorationState {}
 
-class ExplorationLoaded extends ExplorationState {
-  final List<Map<String, dynamic>> destinations;
+class ExplorationLoadingMore extends ExplorationState {
+  final List<Map<String, dynamic>> currentDestinations;
+  final List<String> categories;
   final String searchQuery;
   final String? selectedCategory;
   final SortOption? activeSortOption;
-  final double? minPrice;
-  final double? maxPrice;
-  final double? maxDistance;
   final double? minRating;
-  final List<String>? selectedFacilities;
+  final int currentPage;
+  final Map<int, bool> favorites;
 
-  const ExplorationLoaded({
-    required this.destinations,
+  const ExplorationLoadingMore({
+    required this.currentDestinations,
+    required this.categories,
+    required this.currentPage,
     this.searchQuery = '',
     this.selectedCategory,
     this.activeSortOption,
-    this.minPrice,
-    this.maxPrice,
-    this.maxDistance,
     this.minRating,
-    this.selectedFacilities,
+    this.favorites = const {},
+  });
+
+  @override
+  List<Object?> get props => [
+        currentDestinations,
+        categories,
+        searchQuery,
+        selectedCategory,
+        activeSortOption,
+        minRating,
+        currentPage,
+        favorites,
+      ];
+}
+
+class CategoriesLoaded extends ExplorationState {
+  final List<String> categories;
+
+  const CategoriesLoaded({required this.categories});
+
+  @override
+  List<Object?> get props => [categories];
+}
+
+class ExplorationLoaded extends ExplorationState {
+  final List<Map<String, dynamic>> destinations;
+  final List<String> categories;
+  final String searchQuery;
+  final String? selectedCategory;
+  final SortOption? activeSortOption;
+  final double? minRating;
+  final int currentPage;
+  final bool hasReachedMax;
+  final Map<int, bool> favorites;
+
+  const ExplorationLoaded({
+    required this.destinations,
+    required this.categories,
+    required this.currentPage,
+    this.searchQuery = '',
+    this.selectedCategory,
+    this.activeSortOption,
+    this.minRating,
+    this.hasReachedMax = false,
+    this.favorites = const {},
   });
 
   @override
   List<Object?> get props => [
         destinations,
+        categories,
         searchQuery,
         selectedCategory,
         activeSortOption,
-        minPrice,
-        maxPrice,
-        maxDistance,
         minRating,
-        selectedFacilities,
+        currentPage,
+        hasReachedMax,
+        favorites,
       ];
 
   ExplorationLoaded copyWith({
     List<Map<String, dynamic>>? destinations,
+    List<String>? categories,
     String? searchQuery,
     String? selectedCategory,
     SortOption? activeSortOption,
-    double? minPrice,
-    double? maxPrice,
-    double? maxDistance,
     double? minRating,
-    List<String>? selectedFacilities,
+    int? currentPage,
+    bool? hasReachedMax,
+    Map<int, bool>? favorites,
   }) {
     return ExplorationLoaded(
       destinations: destinations ?? this.destinations,
+      categories: categories ?? this.categories,
       searchQuery: searchQuery ?? this.searchQuery,
       selectedCategory: selectedCategory ?? this.selectedCategory,
       activeSortOption: activeSortOption ?? this.activeSortOption,
-      minPrice: minPrice ?? this.minPrice,
-      maxPrice: maxPrice ?? this.maxPrice,
-      maxDistance: maxDistance ?? this.maxDistance,
       minRating: minRating ?? this.minRating,
-      selectedFacilities: selectedFacilities ?? this.selectedFacilities,
+      currentPage: currentPage ?? this.currentPage,
+      hasReachedMax: hasReachedMax ?? this.hasReachedMax,
+      favorites: favorites ?? this.favorites,
     );
   }
 }
@@ -147,59 +226,238 @@ class ExplorationError extends ExplorationState {
 
 // BLoC
 class ExplorationBloc extends Bloc<ExplorationEvent, ExplorationState> {
-  final List<Map<String, dynamic>> _allDestinations = allDestinations;
+  final ExplorationRepository _repository;
+  List<String> _allCategories = ["Semua"];
+  Position? _userPosition;
+  static const int _pageSize = 10;
 
-  ExplorationBloc() : super(ExplorationInitial()) {
+  ExplorationBloc(this._repository) : super(ExplorationInitial()) {
+    on<LoadExplorationEvent>(_onLoadExploration);
+    on<LoadMoreDestinationsEvent>(_onLoadMoreDestinations);
+    on<LoadCategoriesEvent>(_onLoadCategories);
     on<SearchDestinationsEvent>(_onSearchDestinations);
     on<FilterDestinationsEvent>(_onFilterDestinations);
     on<SortDestinationsEvent>(_onSortDestinations);
+    on<ToggleFavoriteEvent>(_onToggleFavorite);
+    on<LoadFavoritesEvent>(_onLoadFavorites);
+    on<UpdateDistancesEvent>(_onUpdateDistances);
 
-    add(const FilterDestinationsEvent());
+    // Initialize by loading data
+    add(const LoadCategoriesEvent());
+    add(const LoadExplorationEvent());
+    _getUserLocation();
+  }
+
+  Future<void> _getUserLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        return;
+      }
+
+      _userPosition = await Geolocator.getCurrentPosition();
+    } catch (e) {
+      print('Error getting user location: $e');
+    }
+  }
+
+  void _onLoadExploration(
+    LoadExplorationEvent event,
+    Emitter<ExplorationState> emit,
+  ) async {
+    emit(ExplorationLoading());
+    try {
+      final destinations = await _repository.getAllDestinations(
+        page: 1,
+        pageSize: _pageSize,
+      );
+
+      if (state is CategoriesLoaded) {
+        final categoriesState = state as CategoriesLoaded;
+        emit(ExplorationLoaded(
+          destinations: destinations,
+          categories: categoriesState.categories,
+          currentPage: 1,
+          hasReachedMax: destinations.length < _pageSize,
+          favorites: {},
+        ));
+      } else {
+        // If categories not loaded yet, use the ones from repo
+        emit(ExplorationLoaded(
+          destinations: destinations,
+          categories: _allCategories,
+          currentPage: 1,
+          hasReachedMax: destinations.length < _pageSize,
+          favorites: {},
+        ));
+      }
+    } catch (e) {
+      emit(ExplorationError('Failed to load destinations: $e'));
+    }
+  }
+
+  void _onLoadMoreDestinations(
+    LoadMoreDestinationsEvent event,
+    Emitter<ExplorationState> emit,
+  ) async {
+    if (state is ExplorationLoaded) {
+      final currentState = state as ExplorationLoaded;
+
+      if (currentState.hasReachedMax) return;
+
+      try {
+        emit(ExplorationLoadingMore(
+          currentDestinations: currentState.destinations,
+          categories: currentState.categories,
+          currentPage: currentState.currentPage,
+          searchQuery: currentState.searchQuery,
+          selectedCategory: currentState.selectedCategory,
+          minRating: currentState.minRating,
+          activeSortOption: currentState.activeSortOption,
+          favorites: currentState.favorites,
+        ));
+
+        final nextPage = currentState.currentPage + 1;
+        List<Map<String, dynamic>> newDestinations = [];
+
+        if (currentState.searchQuery.isNotEmpty) {
+          // If search is active
+          newDestinations = await _repository.searchDestinations(
+            currentState.searchQuery,
+            page: nextPage,
+            pageSize: _pageSize,
+          );
+        } else if (currentState.selectedCategory != null ||
+            (currentState.minRating != null && currentState.minRating! > 0)) {
+          // If filters are active
+          newDestinations = await _repository.filterDestinations(
+            category: currentState.selectedCategory == "Semua"
+                ? null
+                : currentState.selectedCategory,
+            minRating: currentState.minRating,
+            latitude: _userPosition?.latitude,
+            longitude: _userPosition?.longitude,
+            page: nextPage,
+            pageSize: _pageSize,
+          );
+        } else {
+          // Just load next page
+          newDestinations = await _repository.getAllDestinations(
+            page: nextPage,
+            pageSize: _pageSize,
+          );
+        }
+
+        // Calculate distances for new destinations
+        final processedDestinations = await _processDestinations(
+          newDestinations,
+          sortOption: currentState.activeSortOption,
+        );
+
+        // Check if we need to sort the combined results
+        List<Map<String, dynamic>> combinedDestinations = [
+          ...currentState.destinations,
+          ...processedDestinations,
+        ];
+
+        if (currentState.activeSortOption != null) {
+          _sortDestinations(
+              combinedDestinations, currentState.activeSortOption!);
+        }
+
+        emit(currentState.copyWith(
+          destinations: combinedDestinations,
+          currentPage: nextPage,
+          hasReachedMax: newDestinations.length < _pageSize,
+          favorites: currentState.favorites,
+        ));
+      } catch (e) {
+        emit(ExplorationError('Failed to load more destinations: $e'));
+      }
+    }
+  }
+
+  void _onLoadCategories(
+    LoadCategoriesEvent event,
+    Emitter<ExplorationState> emit,
+  ) async {
+    try {
+      final categories = await _repository.getCategories();
+      // Add "Semua" (All) as the first option
+      _allCategories = ["Semua", ...categories];
+
+      if (state is ExplorationLoaded) {
+        final currentState = state as ExplorationLoaded;
+        emit(currentState.copyWith(categories: _allCategories));
+      } else {
+        emit(CategoriesLoaded(categories: _allCategories));
+      }
+    } catch (e) {
+      emit(ExplorationError('Failed to load categories: $e'));
+    }
   }
 
   void _onSearchDestinations(
     SearchDestinationsEvent event,
     Emitter<ExplorationState> emit,
-  ) {
+  ) async {
     if (state is ExplorationLoaded) {
       final currentState = state as ExplorationLoaded;
       final query = event.query.toLowerCase();
+      emit(ExplorationLoading());
 
-      if (query.isEmpty) {
-        emit(currentState.copyWith(
-          searchQuery: query,
-          destinations: _filterAndSortDestinations(
-            _allDestinations,
-            category: currentState.selectedCategory,
-            minPrice: currentState.minPrice,
-            maxPrice: currentState.maxPrice,
-            maxDistance: currentState.maxDistance,
+      try {
+        List<Map<String, dynamic>> searchResults;
+
+        if (query.isEmpty) {
+          // If query is empty, apply current filters to all destinations
+          searchResults = await _repository.filterDestinations(
+            category: currentState.selectedCategory == "Semua"
+                ? null
+                : currentState.selectedCategory,
             minRating: currentState.minRating,
-            facilities: currentState.selectedFacilities,
-            sortOption: currentState.activeSortOption,
-          ),
-        ));
-      } else {
-        final filteredDestinations = _allDestinations.where((destination) {
-          final name = destination['name'] as String;
-          final location = destination['location'] as String;
-          return name.toLowerCase().contains(query) ||
-              location.toLowerCase().contains(query);
-        }).toList();
+            latitude: _userPosition?.latitude,
+            longitude: _userPosition?.longitude,
+            page: 1,
+            pageSize: _pageSize,
+          );
+        } else {
+          // Search with query
+          searchResults = await _repository.searchDestinations(
+            query,
+            page: 1,
+            pageSize: _pageSize,
+          );
+        }
+
+        // Process destinations (calculate distances and sort)
+        final processedDestinations = await _processDestinations(
+          searchResults,
+          sortOption: currentState.activeSortOption,
+        );
 
         emit(currentState.copyWith(
+          destinations: processedDestinations,
           searchQuery: query,
-          destinations: _filterAndSortDestinations(
-            filteredDestinations,
-            category: currentState.selectedCategory,
-            minPrice: currentState.minPrice,
-            maxPrice: currentState.maxPrice,
-            maxDistance: currentState.maxDistance,
-            minRating: currentState.minRating,
-            facilities: currentState.selectedFacilities,
-            sortOption: currentState.activeSortOption,
-          ),
+          currentPage: 1,
+          hasReachedMax: searchResults.length < _pageSize,
+          // Preserve favorites
+          favorites: currentState.favorites,
         ));
+      } catch (e) {
+        emit(ExplorationError('Failed to search destinations: $e'));
       }
     }
   }
@@ -207,33 +465,41 @@ class ExplorationBloc extends Bloc<ExplorationEvent, ExplorationState> {
   void _onFilterDestinations(
     FilterDestinationsEvent event,
     Emitter<ExplorationState> emit,
-  ) {
-    if (state is ExplorationInitial || state is ExplorationLoaded) {
-      final currentState = state is ExplorationLoaded
-          ? state as ExplorationLoaded
-          : ExplorationLoaded(destinations: _allDestinations);
+  ) async {
+    if (state is ExplorationLoaded) {
+      final currentState = state as ExplorationLoaded;
+      emit(ExplorationLoading());
 
-      final String? newCategory = event.category;
+      try {
+        final filteredDestinations = await _repository.filterDestinations(
+          category: event.category == "Semua" ? null : event.category,
+          minRating: event.minRating,
+          latitude: _userPosition?.latitude,
+          longitude: _userPosition?.longitude,
+          page: 1,
+          pageSize: _pageSize,
+        );
 
-      emit(currentState.copyWith(
-        selectedCategory: newCategory,
-        minPrice: event.minPrice,
-        maxPrice: event.maxPrice,
-        maxDistance: event.maxDistance,
-        minRating: event.minRating,
-        selectedFacilities: event.facilities,
-        destinations: _filterAndSortDestinations(
-          _allDestinations,
-          searchQuery: currentState.searchQuery,
-          category: newCategory,
-          minPrice: event.minPrice ?? currentState.minPrice,
-          maxPrice: event.maxPrice ?? currentState.maxPrice,
-          maxDistance: event.maxDistance ?? currentState.maxDistance,
-          minRating: event.minRating ?? currentState.minRating,
-          facilities: event.facilities ?? currentState.selectedFacilities,
+        // Process destinations (calculate distances and sort)
+        final processedDestinations = await _processDestinations(
+          filteredDestinations,
           sortOption: currentState.activeSortOption,
-        ),
-      ));
+        );
+
+        emit(currentState.copyWith(
+          destinations: processedDestinations,
+          selectedCategory: event.category,
+          minRating: event.minRating,
+          currentPage: 1,
+          hasReachedMax: filteredDestinations.length < _pageSize,
+          // Clear search when filtering
+          searchQuery: '',
+          // Preserve favorites
+          favorites: currentState.favorites,
+        ));
+      } catch (e) {
+        emit(ExplorationError('Failed to filter destinations: $e'));
+      }
     }
   }
 
@@ -246,127 +512,180 @@ class ExplorationBloc extends Bloc<ExplorationEvent, ExplorationState> {
       final sortedDestinations =
           List<Map<String, dynamic>>.from(currentState.destinations);
 
-      switch (event.sortOption) {
-        case SortOption.priceAsc:
-          sortedDestinations
-              .sort((a, b) => (a['price'] as int).compareTo(b['price'] as int));
-          break;
-        case SortOption.priceDesc:
-          sortedDestinations
-              .sort((a, b) => (b['price'] as int).compareTo(a['price'] as int));
-          break;
-        case SortOption.ratingDesc:
-          sortedDestinations.sort((a, b) =>
-              (b['rating'] as double).compareTo(a['rating'] as double));
-          break;
-        case SortOption.distanceAsc:
-          sortedDestinations.sort((a, b) =>
-              (a['distance'] as double).compareTo(b['distance'] as double));
-          break;
-      }
+      _sortDestinations(sortedDestinations, event.sortOption);
 
       emit(currentState.copyWith(
         destinations: sortedDestinations,
         activeSortOption: event.sortOption,
+        // Preserve favorites
+        favorites: currentState.favorites,
       ));
     }
   }
 
-  List<Map<String, dynamic>> _filterAndSortDestinations(
-    List<Map<String, dynamic>> destinations, {
-    String? searchQuery,
-    String? category,
-    double? minPrice,
-    double? maxPrice,
-    double? maxDistance,
-    double? minRating,
-    List<String>? facilities,
-    SortOption? sortOption,
-  }) {
-    // Filter by search query
-    List<Map<String, dynamic>> result = destinations;
+  void _onToggleFavorite(
+    ToggleFavoriteEvent event,
+    Emitter<ExplorationState> emit,
+  ) {
+    if (state is ExplorationLoaded) {
+      final currentState = state as ExplorationLoaded;
 
-    if (searchQuery != null && searchQuery.isNotEmpty) {
-      final query = searchQuery.toLowerCase();
-      result = result.where((destination) {
-        final name = destination['name'] as String;
-        final location = destination['location'] as String;
-        return name.toLowerCase().contains(query) ||
-            location.toLowerCase().contains(query);
-      }).toList();
+      // Create a new map with the updated favorite status
+      final newFavorites = Map<int, bool>.from(currentState.favorites);
+      newFavorites[event.destinationId] = event.isFavorite;
+
+      emit(currentState.copyWith(favorites: newFavorites));
     }
+  }
 
-    // Filter by category
-    if (category != null) {
-      result = result.where((destination) {
-        return destination['category'] == category;
-      }).toList();
+  void _onLoadFavorites(
+    LoadFavoritesEvent event,
+    Emitter<ExplorationState> emit,
+  ) {
+    if (state is ExplorationLoaded) {
+      final currentState = state as ExplorationLoaded;
+      emit(currentState.copyWith(favorites: event.favorites));
     }
+  }
 
-    // Filter by price range
-    if (minPrice != null) {
-      result = result.where((destination) {
-        final price = destination['price'] as int;
-        return price >= minPrice;
-      }).toList();
-    }
+  // Add handler for updating distances
+  void _onUpdateDistances(
+    UpdateDistancesEvent event,
+    Emitter<ExplorationState> emit,
+  ) {
+    if (state is ExplorationLoaded) {
+      final currentState = state as ExplorationLoaded;
 
-    if (maxPrice != null) {
-      result = result.where((destination) {
-        final price = destination['price'] as int;
-        return price <= maxPrice;
-      }).toList();
-    }
+      // Update user position
+      _userPosition = Position(
+        latitude: event.latitude,
+        longitude: event.longitude,
+        timestamp: DateTime.now(),
+        accuracy: 0,
+        altitude: 0,
+        heading: 0,
+        speed: 0,
+        speedAccuracy: 0,
+        altitudeAccuracy: 0,
+        headingAccuracy: 0,
+      );
 
-    // Filter by distance
-    if (maxDistance != null) {
-      result = result.where((destination) {
-        final distance = destination['distance'] as double;
-        return distance <= maxDistance;
-      }).toList();
-    }
+      // Recalculate distances for all destinations
+      List<Map<String, dynamic>> updatedDestinations =
+          currentState.destinations.map((destination) {
+        // Clone the destination
+        final updatedDestination = Map<String, dynamic>.from(destination);
 
-    // Filter by rating
-    if (minRating != null) {
-      result = result.where((destination) {
-        final rating = destination['rating'] as double;
-        return rating >= minRating;
-      }).toList();
-    }
+        // Extract destination coordinates
+        double? destLat;
+        double? destLng;
 
-    // Filter by facilities
-    if (facilities != null && facilities.isNotEmpty) {
-      result = result.where((destination) {
-        final destinationFacilities = destination['facilities'] as List<String>;
-        for (final facility in facilities) {
-          if (!destinationFacilities.contains(facility)) {
-            return false;
-          }
+        final latValue = destination['latitude'];
+        final lngValue = destination['longitude'];
+
+        // Handle different possible data types
+        if (latValue is double) {
+          destLat = latValue;
+        } else if (latValue is String) {
+          destLat = double.tryParse(latValue);
         }
-        return true;
+
+        if (lngValue is double) {
+          destLng = lngValue;
+        } else if (lngValue is String) {
+          destLng = double.tryParse(lngValue);
+        }
+
+        // Calculate distance if coordinates are valid
+        if (destLat != null && destLng != null) {
+          final distanceInMeters = Geolocator.distanceBetween(
+            event.latitude,
+            event.longitude,
+            destLat,
+            destLng,
+          );
+          updatedDestination['distance'] = distanceInMeters / 1000;
+        }
+
+        return updatedDestination;
       }).toList();
+
+      // Sort if needed
+      if (currentState.activeSortOption == SortOption.distanceAsc) {
+        _sortDestinations(updatedDestinations, SortOption.distanceAsc);
+      }
+
+      // Emit updated state
+      emit(currentState.copyWith(
+        destinations: updatedDestinations,
+      ));
+    }
+  }
+
+  // Helper method to sort destinations
+  void _sortDestinations(
+      List<Map<String, dynamic>> destinations, SortOption sortOption) {
+    switch (sortOption) {
+      case SortOption.ratingDesc:
+        destinations.sort(
+            (a, b) => (b['rating'] as double).compareTo(a['rating'] as double));
+        break;
+      case SortOption.distanceAsc:
+        destinations.sort((a, b) {
+          final aDistance = (a['distance'] as num?)?.toDouble() ?? 0.0;
+          final bDistance = (b['distance'] as num?)?.toDouble() ?? 0.0;
+          return aDistance.compareTo(bDistance);
+        });
+        break;
+      // We don't have price in our model anymore, so these options just maintain structure
+      case SortOption.priceAsc:
+      case SortOption.priceDesc:
+        // No-op as price is not available
+        break;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _processDestinations(
+    List<Map<String, dynamic>> destinations, {
+    SortOption? sortOption,
+  }) async {
+    final result = List<Map<String, dynamic>>.from(destinations);
+
+    // Calculate distances if we have user's location
+    if (_userPosition != null) {
+      for (var destination in result) {
+        final destLatStr = destination['latitude'] as String?;
+        final destLonStr = destination['longitude'] as String?;
+
+        final destLat = destLatStr != null && destLatStr.isNotEmpty
+            ? double.tryParse(destLatStr) ?? 0.0
+            : 0.0;
+        final destLon = destLonStr != null && destLonStr.isNotEmpty
+            ? double.tryParse(destLonStr) ?? 0.0
+            : 0.0;
+
+        final distance = Geolocator.distanceBetween(
+              _userPosition!.latitude,
+              _userPosition!.longitude,
+              destLat,
+              destLon,
+            ) /
+            1000;
+
+        print('Calculated distance: $distance km');
+
+        destination['distance'] = distance; // Convert to km
+      }
+    } else {
+      // Add placeholder distance if location not available
+      for (var destination in result) {
+        destination['distance'] = 0.0;
+      }
     }
 
-    // Sort destinations
+    // Apply sort if specified
     if (sortOption != null) {
-      switch (sortOption) {
-        case SortOption.priceAsc:
-          result
-              .sort((a, b) => (a['price'] as int).compareTo(b['price'] as int));
-          break;
-        case SortOption.priceDesc:
-          result
-              .sort((a, b) => (b['price'] as int).compareTo(a['price'] as int));
-          break;
-        case SortOption.ratingDesc:
-          result.sort((a, b) =>
-              (b['rating'] as double).compareTo(a['rating'] as double));
-          break;
-        case SortOption.distanceAsc:
-          result.sort((a, b) =>
-              (a['distance'] as double).compareTo(b['distance'] as double));
-          break;
-      }
+      _sortDestinations(result, sortOption);
     }
 
     return result;

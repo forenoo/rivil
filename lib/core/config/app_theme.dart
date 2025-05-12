@@ -22,7 +22,7 @@ class AppTheme {
       outline: AppColors.divider,
       shadow: AppColors.shadow,
     ),
-    scaffoldBackgroundColor: AppColors.background,
+    scaffoldBackgroundColor: const Color.fromARGB(255, 251, 251, 251),
     appBarTheme: AppBarTheme(
       backgroundColor: AppColors.primary,
       foregroundColor: AppColors.onPrimary,

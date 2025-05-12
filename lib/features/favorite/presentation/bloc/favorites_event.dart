@@ -1,38 +1,27 @@
-import 'package:equatable/equatable.dart';
-import 'package:rivil/features/favorite/domain/model/favorite_destination.dart';
-
-abstract class FavoritesEvent extends Equatable {
-  const FavoritesEvent();
-
-  @override
-  List<Object> get props => [];
-}
+abstract class FavoritesEvent {}
 
 class LoadFavorites extends FavoritesEvent {}
 
 class AddToFavorites extends FavoritesEvent {
-  final FavoriteDestination destination;
+  final int destinationId;
 
-  const AddToFavorites(this.destination);
-
-  @override
-  List<Object> get props => [destination];
+  AddToFavorites(this.destinationId);
 }
 
 class RemoveFromFavorites extends FavoritesEvent {
-  final String destinationName;
+  final int destinationId;
 
-  const RemoveFromFavorites(this.destinationName);
+  RemoveFromFavorites(this.destinationId);
+}
 
-  @override
-  List<Object> get props => [destinationName];
+class SearchFavorites extends FavoritesEvent {
+  final String query;
+
+  SearchFavorites(this.query);
 }
 
 class CheckIsFavorite extends FavoritesEvent {
-  final String destinationName;
+  final int destinationId;
 
-  const CheckIsFavorite(this.destinationName);
-
-  @override
-  List<Object> get props => [destinationName];
+  CheckIsFavorite(this.destinationId);
 }

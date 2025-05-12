@@ -5,6 +5,7 @@ import 'package:rivil/core/services/media_permission_service.dart';
 import 'package:rivil/features/auth/data/models/user_profile_model.dart';
 import 'package:rivil/features/profile/presentation/screens/edit_profile_screen.dart';
 import 'package:rivil/widgets/custom_snackbar.dart';
+import 'package:rivil/widgets/slide_page_route.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
@@ -72,28 +73,32 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: Text(
+        title: const Text(
           'Informasi Pribadi',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 17,
             letterSpacing: -0.5,
           ),
         ),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        shadowColor: Colors.transparent,
+        foregroundColor: colorScheme.primary,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded, size: 16),
-          onPressed: () => Navigator.pop(context),
-          splashRadius: 20,
-          padding: EdgeInsets.zero,
-          color: colorScheme.primary,
+          icon: const Icon(Icons.arrow_back_ios, size: 20),
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: SafeArea(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
@@ -627,8 +632,8 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
 
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => EditProfileScreen(userProfile: _userProfile!),
+      SlidePageRoute(
+        child: EditProfileScreen(userProfile: _userProfile!),
       ),
     ).then((result) {
       if (result == true) {

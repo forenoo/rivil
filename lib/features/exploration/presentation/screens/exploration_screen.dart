@@ -3,6 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rivil/core/config/app_colors.dart';
 import 'package:rivil/features/exploration/presentation/bloc/exploration_bloc.dart';
 import 'package:rivil/features/exploration/presentation/screens/destination_detail_screen.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:rivil/widgets/slide_page_route.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:rivil/core/services/location_service.dart';
+import 'dart:async';
 
 class ExplorationScreen extends StatefulWidget {
   const ExplorationScreen({super.key});
@@ -13,49 +18,108 @@ class ExplorationScreen extends StatefulWidget {
 
 class _ExplorationScreenState extends State<ExplorationScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final List<String> _categories = [
-    "Semua",
-    "Pantai",
-    "Gunung",
-    "Air Terjun",
-    "Danau",
-    "Goa",
-    "Hutan Wisata",
-    "Kebun Raya",
-    "Taman Nasional",
-    "Agrowisata",
-    "Pemandian Air Panas",
-    "Bukit",
-    "Museum",
-    "Candi",
-    "Taman Hiburan",
-    "Taman Air",
-    "Kebun Binatang",
-    "Akuarium",
-    "Outbound",
-    "Wahana Permainan",
-    "Pusat Olahraga",
-    "Restoran",
-    "Kafe",
-    "Mall"
-  ];
+  final ScrollController _scrollController = ScrollController();
+  late ExplorationBloc _explorationBloc;
 
   // Filter values
-  RangeValues _priceRange = const RangeValues(0, 1000000);
-  double _maxDistance = 100;
   double _minRating = 0;
-  List<String> _selectedFacilities = [];
   String? _selectedCategory;
   SortOption? _selectedSortOption;
 
   @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+
+    // Initialize favorites after widget is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeFavorites();
+      _recalculateDistances();
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Get the bloc from the context once it's available
+    _explorationBloc = context.read<ExplorationBloc>();
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     super.dispose();
   }
 
+  // Method to initialize favorites in the bloc
+  Future<void> _initializeFavorites() async {
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    if (currentUser == null) return;
+
+    try {
+      // Fetch all favorites for the current user
+      final response = await Supabase.instance.client
+          .from('favorite_destination')
+          .select('destination_id')
+          .eq('user_id', currentUser.id);
+
+      // Create a map of destination_id -> true for all favorited destinations
+      final Map<int, bool> favorites = {};
+      for (var item in response) {
+        final destinationId = item['destination_id'] as int;
+        favorites[destinationId] = true;
+      }
+
+      // Update the bloc with initial favorites
+      if (_explorationBloc.state is ExplorationLoaded) {
+        _explorationBloc.add(LoadFavoritesEvent(favorites));
+      }
+    } catch (e) {
+      print('Error loading favorites: $e');
+    }
+  }
+
+  // Method to recalculate distances for all visible destinations
+  Future<void> _recalculateDistances() async {
+    if (_explorationBloc.state is! ExplorationLoaded) return;
+
+    try {
+      final locationService = LocationService();
+      final hasPermission = await locationService.requestLocationPermission();
+
+      if (!hasPermission) return;
+
+      final serviceEnabled = await locationService.isLocationServiceEnabled();
+      if (!serviceEnabled) return;
+
+      final position = await locationService.getCurrentPosition();
+      if (position == null) return;
+
+      _explorationBloc.add(UpdateDistancesEvent(
+        latitude: position.latitude,
+        longitude: position.longitude,
+      ));
+    } catch (e) {
+      print('Error recalculating distances: $e');
+    }
+  }
+
+  void _onScroll() {
+    if (_isBottom) {
+      _explorationBloc.add(const LoadMoreDestinationsEvent());
+    }
+  }
+
+  bool get _isBottom {
+    if (!_scrollController.hasClients) return false;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.offset;
+    return currentScroll >= (maxScroll - 200);
+  }
+
   void _showFilterBottomSheet(BuildContext context) {
-    // Get the bloc instance before showing the bottom sheet
     final explorationBloc = context.read<ExplorationBloc>();
 
     showModalBottomSheet(
@@ -74,13 +138,7 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
         builder: (context, state) {
           if (state is ExplorationLoaded) {
             // Initialize filter values from state
-            _priceRange = RangeValues(
-              state.minPrice ?? 0,
-              state.maxPrice ?? 1000000,
-            );
-            _maxDistance = state.maxDistance ?? 100;
             _minRating = state.minRating ?? 0;
-            _selectedFacilities = state.selectedFacilities?.toList() ?? [];
             _selectedCategory = state.selectedCategory;
           }
 
@@ -123,10 +181,7 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
                         TextButton(
                           onPressed: () {
                             setState(() {
-                              _priceRange = const RangeValues(0, 1000000);
-                              _maxDistance = 100;
                               _minRating = 0;
-                              _selectedFacilities = [];
                               _selectedCategory = null;
                               _selectedSortOption = null;
                             });
@@ -163,18 +218,6 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
                             _buildSortChip(
                               context,
                               setState,
-                              "Harga Terendah",
-                              SortOption.priceAsc,
-                            ),
-                            _buildSortChip(
-                              context,
-                              setState,
-                              "Harga Tertinggi",
-                              SortOption.priceDesc,
-                            ),
-                            _buildSortChip(
-                              context,
-                              setState,
                               "Rating Tertinggi",
                               SortOption.ratingDesc,
                             ),
@@ -198,134 +241,46 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
                           ),
                         ),
                         const SizedBox(height: 6),
-                        Wrap(
-                          spacing: 8,
-                          children: _categories.map((category) {
-                            final isSelected = (category == 'Semua' &&
-                                    _selectedCategory == null) ||
-                                category == _selectedCategory;
+                        if (state is ExplorationLoaded)
+                          Wrap(
+                            spacing: 8,
+                            children: state.categories.map((category) {
+                              final isSelected = (category == 'Semua' &&
+                                      _selectedCategory == null) ||
+                                  category == _selectedCategory;
 
-                            return FilterChip(
-                              label: Text(category),
-                              selected: isSelected,
-                              side: BorderSide(
-                                color: isSelected
-                                    ? AppColors.primary
-                                    : Colors.grey.shade400,
-                              ),
-                              backgroundColor: Colors.grey.shade50,
-                              selectedColor: AppColors.jordyBlue200,
-                              checkmarkColor: AppColors.primary,
-                              labelStyle: TextStyle(
-                                color: isSelected
-                                    ? AppColors.primary
-                                    : Colors.grey.shade800,
-                                fontWeight: isSelected
-                                    ? FontWeight.w600
-                                    : FontWeight.normal,
-                              ),
-                              onSelected: (selected) {
-                                setState(() {
-                                  if (selected) {
-                                    _selectedCategory =
-                                        category == 'Semua' ? null : category;
-                                  }
-                                });
-                              },
-                            );
-                          }).toList(),
-                        ),
+                              return FilterChip(
+                                label: Text(category),
+                                selected: isSelected,
+                                side: BorderSide(
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : Colors.grey.shade400,
+                                ),
+                                backgroundColor: Colors.grey.shade50,
+                                selectedColor: AppColors.jordyBlue200,
+                                checkmarkColor: AppColors.primary,
+                                labelStyle: TextStyle(
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : Colors.grey.shade800,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
+                                ),
+                                onSelected: (selected) {
+                                  setState(() {
+                                    if (selected) {
+                                      _selectedCategory =
+                                          category == 'Semua' ? null : category;
+                                    }
+                                  });
+                                },
+                              );
+                            }).toList(),
+                          ),
 
                         const SizedBox(height: 20),
-
-                        // // Price range
-                        // const Text(
-                        //   'Kisaran Harga Tiket',
-                        //   style: TextStyle(
-                        //     fontWeight: FontWeight.bold,
-                        //     fontSize: 16,
-                        //   ),
-                        // ),
-                        // const SizedBox(height: 8),
-                        // Row(
-                        //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        //   children: [
-                        //     Text(
-                        //       'Rp ${_priceRange.start.toInt()}',
-                        //       style: TextStyle(
-                        //         color: Colors.grey.shade600,
-                        //       ),
-                        //     ),
-                        //     Text(
-                        //       'Rp ${_priceRange.end.toInt()}',
-                        //       style: TextStyle(
-                        //         color: Colors.grey.shade600,
-                        //       ),
-                        //     ),
-                        //   ],
-                        // ),
-                        // RangeSlider(
-                        //   values: _priceRange,
-                        //   min: 0,
-                        //   max: 1000000,
-                        //   divisions: 20,
-                        //   activeColor: AppColors.primary,
-                        //   inactiveColor: AppColors.jordyBlue200,
-                        //   labels: RangeLabels(
-                        //     'Rp ${_priceRange.start.toInt()}',
-                        //     'Rp ${_priceRange.end.toInt()}',
-                        //   ),
-                        //   onChanged: (values) {
-                        //     setState(() {
-                        //       _priceRange = values;
-                        //     });
-                        //   },
-                        // ),
-
-                        // const SizedBox(height: 20),
-
-                        // // Maximum distance
-                        // const Text(
-                        //   'Jarak Maksimum',
-                        //   style: TextStyle(
-                        //     fontWeight: FontWeight.bold,
-                        //     fontSize: 16,
-                        //   ),
-                        // ),
-                        // const SizedBox(height: 8),
-                        // Row(
-                        //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        //   children: [
-                        //     Text(
-                        //       '0 km',
-                        //       style: TextStyle(
-                        //         color: Colors.grey.shade600,
-                        //       ),
-                        //     ),
-                        //     Text(
-                        //       '${_maxDistance.toInt()} km',
-                        //       style: TextStyle(
-                        //         color: Colors.grey.shade600,
-                        //       ),
-                        //     ),
-                        //   ],
-                        // ),
-                        // Slider(
-                        //   value: _maxDistance,
-                        //   min: 0,
-                        //   max: 100,
-                        //   divisions: 20,
-                        //   activeColor: AppColors.primary,
-                        //   inactiveColor: AppColors.jordyBlue200,
-                        //   label: '${_maxDistance.toInt()} km',
-                        //   onChanged: (value) {
-                        //     setState(() {
-                        //       _maxDistance = value;
-                        //     });
-                        //   },
-                        // ),
-
-                        // const SizedBox(height: 20),
 
                         // Minimum rating
                         const Text(
@@ -407,13 +362,7 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
                       onPressed: () {
                         explorationBloc.add(
                           FilterDestinationsEvent(
-                            minPrice: _priceRange.start,
-                            maxPrice: _priceRange.end,
-                            maxDistance: _maxDistance,
                             minRating: _minRating,
-                            facilities: _selectedFacilities.isNotEmpty
-                                ? _selectedFacilities
-                                : null,
                             category: _selectedCategory,
                           ),
                         );
@@ -484,121 +433,201 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => ExplorationBloc(),
-      child: Scaffold(
-        body: BlocBuilder<ExplorationBloc, ExplorationState>(
-          builder: (context, state) {
-            return SafeArea(
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: TextField(
-                              controller: _searchController,
-                              onChanged: (query) {
-                                context
-                                    .read<ExplorationBloc>()
-                                    .add(SearchDestinationsEvent(query));
-                              },
-                              decoration: InputDecoration(
-                                fillColor: Colors.grey.shade100,
-                                hintText: 'Cari destinasi wisata...',
-                                hintStyle: TextStyle(
-                                  color: Colors.grey.shade500,
-                                  fontSize: 14,
-                                ),
-                                prefixIcon: Icon(
-                                  Icons.search,
-                                  color: Colors.grey.shade600,
-                                  size: 20,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderSide: BorderSide.none,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                contentPadding:
-                                    const EdgeInsets.symmetric(vertical: 14),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Container(
+    return Scaffold(
+      body: BlocBuilder<ExplorationBloc, ExplorationState>(
+        builder: (context, state) {
+          return SafeArea(
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Container(
                           decoration: BoxDecoration(
                             color: Colors.grey.shade100,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: IconButton(
-                            onPressed: () => _showFilterBottomSheet(context),
-                            icon: Icon(
-                              Icons.filter_alt,
-                              color: AppColors.primary,
+                          child: TextField(
+                            controller: _searchController,
+                            onChanged: (query) {
+                              context
+                                  .read<ExplorationBloc>()
+                                  .add(SearchDestinationsEvent(query));
+                            },
+                            decoration: InputDecoration(
+                              fillColor: Colors.grey.shade100,
+                              hintText: 'Cari destinasi wisata...',
+                              hintStyle: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 14,
+                              ),
+                              prefixIcon: Icon(
+                                Icons.search,
+                                color: Colors.grey.shade600,
+                                size: 20,
+                              ),
+                              border: OutlineInputBorder(
+                                borderSide: BorderSide.none,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              contentPadding:
+                                  const EdgeInsets.symmetric(vertical: 14),
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: state is ExplorationLoaded
-                        ? state.destinations.isEmpty
-                            ? Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.search_off,
-                                      size: 64,
-                                      color: Colors.grey.shade400,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      'Tidak ada destinasi yang ditemukan',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.grey.shade600,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Coba ubah filter pencarian Anda',
-                                      style: TextStyle(
-                                        color: Colors.grey.shade500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : ListView.builder(
-                                padding: const EdgeInsets.all(16),
-                                itemCount: state.destinations.length,
-                                itemBuilder: (context, index) {
-                                  final destination = state.destinations[index];
-                                  return _buildDestinationCard(
-                                    context: context,
-                                    destination: destination,
-                                  );
-                                },
-                              )
-                        : const Center(
-                            child: CircularProgressIndicator(),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: IconButton(
+                          onPressed: () => _showFilterBottomSheet(context),
+                          icon: Icon(
+                            Icons.filter_alt,
+                            color: AppColors.primary,
                           ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                Expanded(
+                  child: _buildContent(state, context),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildContent(ExplorationState state, BuildContext context) {
+    if (state is ExplorationLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    } else if (state is ExplorationLoaded || state is ExplorationLoadingMore) {
+      final destinations = state is ExplorationLoaded
+          ? state.destinations
+          : (state as ExplorationLoadingMore).currentDestinations;
+
+      if (destinations.isEmpty) {
+        return _buildEmptyState();
+      }
+
+      return RefreshIndicator(
+        onRefresh: _refreshExploration,
+        color: AppColors.primary,
+        child: ListView.builder(
+          controller: _scrollController,
+          padding: const EdgeInsets.all(16),
+          itemCount:
+              destinations.length + (state is ExplorationLoadingMore ? 1 : 0),
+          itemBuilder: (context, index) {
+            if (index == destinations.length) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
+
+            final destination = destinations[index];
+            return _buildDestinationCard(
+              context: context,
+              destination: destination,
             );
           },
         ),
+      );
+    } else if (state is ExplorationError) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Colors.red.shade300,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Terjadi kesalahan',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey.shade700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              state.message,
+              style: TextStyle(
+                color: Colors.grey.shade600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                context
+                    .read<ExplorationBloc>()
+                    .add(const LoadExplorationEvent());
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text('Coba Lagi'),
+            ),
+          ],
+        ),
+      );
+    } else {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.search_off,
+            size: 64,
+            color: Colors.grey.shade400,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Tidak ada destinasi yang ditemukan',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey.shade600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Coba ubah filter pencarian Anda',
+            style: TextStyle(
+              color: Colors.grey.shade500,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -626,38 +655,75 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
                   topLeft: Radius.circular(16),
                   topRight: Radius.circular(16),
                 ),
-                child: Image.asset(
-                  destination['imageUrl'] as String,
-                  height: 180,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    height: 180,
-                    width: double.infinity,
-                    color: Colors.grey.shade300,
-                    child: const Icon(Icons.image, color: Colors.grey),
-                  ),
-                ),
+                child: destination['image_url'].toString().startsWith('http')
+                    ? CachedNetworkImage(
+                        imageUrl: destination['image_url'] as String,
+                        height: 180,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          height: 180,
+                          width: double.infinity,
+                          color: Colors.grey.shade200,
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          height: 180,
+                          width: double.infinity,
+                          color: Colors.grey.shade300,
+                          child: const Icon(Icons.image, color: Colors.grey),
+                        ),
+                      )
+                    : Image.asset(
+                        destination['image_url'] as String,
+                        height: 180,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          height: 180,
+                          width: double.infinity,
+                          color: Colors.grey.shade300,
+                          child: const Icon(Icons.image, color: Colors.grey),
+                        ),
+                      ),
               ),
-              // Favorite button
               Positioned(
                 top: 12,
                 right: 12,
-                child: Container(
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white,
-                  ),
-                  padding: const EdgeInsets.all(8),
-                  child: Icon(
-                    destination['isFavorite'] as bool
-                        ? Icons.favorite
-                        : Icons.favorite_border,
-                    color: destination['isFavorite'] as bool
-                        ? Colors.red
-                        : Colors.grey.shade700,
-                    size: 18,
-                  ),
+                child: BlocBuilder<ExplorationBloc, ExplorationState>(
+                  buildWhen: (previous, current) {
+                    if (current is ExplorationLoaded &&
+                        previous is ExplorationLoaded) {
+                      // Only rebuild this widget when favorites change for this destination
+                      return current.favorites[destination['id']] !=
+                          previous.favorites[destination['id']];
+                    }
+                    return false;
+                  },
+                  builder: (context, state) {
+                    bool isFavorite = false;
+
+                    if (state is ExplorationLoaded) {
+                      isFavorite = state.favorites[destination['id']] ?? false;
+                    }
+
+                    return GestureDetector(
+                      onTap: () async {
+                        await _toggleFavorite(destination['id'] as int);
+                      },
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                        ),
+                        padding: const EdgeInsets.all(8),
+                        child: Icon(
+                          isFavorite ? Icons.favorite : Icons.favorite_border,
+                          color: isFavorite ? Colors.red : Colors.grey.shade700,
+                          size: 18,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
               // Distance
@@ -680,7 +746,10 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        '${destination['distance']} km',
+                        destination['distance'] != null &&
+                                (destination['distance'] as num) > 0
+                            ? '${((destination['distance'] as num).toDouble()).toStringAsFixed(1)} km'
+                            : 'Calculating...',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -722,7 +791,7 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
                   ),
                 ),
               ),
-              // Price
+              // Category badge
               Positioned(
                 bottom: 12,
                 right: 12,
@@ -734,7 +803,7 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    'Rp ${destination['price']}',
+                    destination['category'] as String,
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -765,46 +834,28 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
                       color: colorScheme.primary,
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      destination['location'] as String,
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
+                    Expanded(
+                      child: Text(
+                        destination['address'] != null
+                            ? destination['address'] as String
+                            : 'No location data',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: (destination['facilities'] as List<String>)
-                      .take(3)
-                      .map((facility) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        facility,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade700,
-                        ),
-                      ),
-                    );
-                  }).toList(),
                 ),
                 const SizedBox(height: 12),
                 ElevatedButton(
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => DestinationDetailScreen(
-                          destination: destination,
+                      SlidePageRoute(
+                        child: DestinationDetailScreen(
+                          destinationId: destination['id'] as int,
                         ),
                       ),
                     );
@@ -833,5 +884,64 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
         ],
       ),
     );
+  }
+
+  // Method to toggle favorite status for a destination
+  Future<void> _toggleFavorite(int destinationId) async {
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    if (currentUser == null) return;
+
+    // Get current favorite status from bloc
+    bool isFavorited = false;
+    if (_explorationBloc.state is ExplorationLoaded) {
+      final state = _explorationBloc.state as ExplorationLoaded;
+      isFavorited = state.favorites[destinationId] ?? false;
+    }
+
+    if (isFavorited) {
+      // Delete the favorite entry
+      await Supabase.instance.client
+          .from('favorite_destination')
+          .delete()
+          .eq('user_id', currentUser.id)
+          .eq('destination_id', destinationId);
+
+      // Update bloc state
+      _explorationBloc.add(ToggleFavoriteEvent(
+        destinationId: destinationId,
+        isFavorite: false,
+      ));
+    } else {
+      // Create a new favorite entry
+      await Supabase.instance.client
+          .from('favorite_destination')
+          .insert({'user_id': currentUser.id, 'destination_id': destinationId});
+
+      // Update bloc state
+      _explorationBloc.add(ToggleFavoriteEvent(
+        destinationId: destinationId,
+        isFavorite: true,
+      ));
+    }
+  }
+
+  Future<void> _refreshExploration() async {
+    _explorationBloc.add(const LoadExplorationEvent());
+    // Create a completer that will be resolved when the refresh is complete
+    final completer = Completer<void>();
+
+    // Set up a listener to know when refresh is complete
+    late final StreamSubscription<ExplorationState> subscription;
+    subscription = _explorationBloc.stream.listen((state) {
+      if (state is ExplorationLoaded && !completer.isCompleted) {
+        completer.complete();
+        subscription.cancel();
+      } else if (state is ExplorationError && !completer.isCompleted) {
+        completer.completeError(state.message);
+        subscription.cancel();
+      }
+    });
+
+    return completer.future;
   }
 }

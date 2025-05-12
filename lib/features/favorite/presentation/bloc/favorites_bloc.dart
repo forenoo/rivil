@@ -1,15 +1,20 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rivil/features/favorite/domain/model/favorite_destination.dart';
 import 'package:rivil/features/favorite/domain/repository/favorite_repository.dart';
 import 'package:rivil/features/favorite/presentation/bloc/favorites_event.dart';
 import 'package:rivil/features/favorite/presentation/bloc/favorites_state.dart';
 
 class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
-  final FavoriteRepository _favoriteRepository;
+  final FavoriteRepository _repository;
+  List<FavoriteDestination> _allFavorites = [];
 
-  FavoritesBloc(this._favoriteRepository) : super(FavoritesInitial()) {
+  FavoritesBloc({required FavoriteRepository repository})
+      : _repository = repository,
+        super(FavoritesInitial()) {
     on<LoadFavorites>(_onLoadFavorites);
     on<AddToFavorites>(_onAddToFavorites);
     on<RemoveFromFavorites>(_onRemoveFromFavorites);
+    on<SearchFavorites>(_onSearchFavorites);
     on<CheckIsFavorite>(_onCheckIsFavorite);
   }
 
@@ -19,8 +24,8 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
   ) async {
     emit(FavoritesLoading());
     try {
-      final favorites = await _favoriteRepository.getFavoriteDestinations();
-      emit(FavoritesLoaded(favorites));
+      _allFavorites = await _repository.getFavoriteDestinations();
+      emit(FavoritesLoaded(favorites: _allFavorites));
     } catch (e) {
       emit(FavoritesError(e.toString()));
     }
@@ -31,11 +36,8 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
     Emitter<FavoritesState> emit,
   ) async {
     try {
-      await _favoriteRepository.addFavoriteDestination(event.destination);
-      emit(FavoriteAdded(event.destination));
-
-      // Reload updated favorites
-      add(LoadFavorites());
+      await _repository.addFavoriteDestination(event.destinationId);
+      add(LoadFavorites()); // Reload the favorites
     } catch (e) {
       emit(FavoritesError(e.toString()));
     }
@@ -46,14 +48,40 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
     Emitter<FavoritesState> emit,
   ) async {
     try {
-      await _favoriteRepository
-          .removeFavoriteDestination(event.destinationName);
-      emit(FavoriteRemoved(event.destinationName));
+      await _repository.removeFavoriteDestination(event.destinationId);
 
-      // Reload updated favorites
-      add(LoadFavorites());
+      if (state is FavoritesLoaded) {
+        _allFavorites
+            .removeWhere((item) => item.destinationId == event.destinationId);
+        emit(FavoritesLoaded(favorites: _allFavorites));
+      }
     } catch (e) {
       emit(FavoritesError(e.toString()));
+    }
+  }
+
+  Future<void> _onSearchFavorites(
+    SearchFavorites event,
+    Emitter<FavoritesState> emit,
+  ) async {
+    if (state is FavoritesLoaded) {
+      final query = event.query.toLowerCase();
+
+      if (query.isEmpty) {
+        emit(FavoritesLoaded(favorites: _allFavorites));
+        return;
+      }
+
+      final filtered = _allFavorites.where((destination) {
+        return destination.name.toLowerCase().contains(query) ||
+            destination.location.toLowerCase().contains(query) ||
+            destination.category.toLowerCase().contains(query);
+      }).toList();
+
+      emit(FavoritesLoaded(
+        favorites: _allFavorites,
+        filteredFavorites: filtered,
+      ));
     }
   }
 
@@ -62,14 +90,17 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
     Emitter<FavoritesState> emit,
   ) async {
     try {
-      final isFavorite =
-          await _favoriteRepository.isFavorite(event.destinationName);
+      final isFavorite = await _repository.isFavorite(event.destinationId);
       emit(FavoriteCheckResult(
         isFavorite: isFavorite,
-        destinationName: event.destinationName,
+        destinationId: event.destinationId,
       ));
     } catch (e) {
-      emit(FavoritesError(e.toString()));
+      // Just return false without emitting error
+      emit(FavoriteCheckResult(
+        isFavorite: false,
+        destinationId: event.destinationId,
+      ));
     }
   }
 }

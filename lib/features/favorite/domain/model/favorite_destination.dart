@@ -1,57 +1,47 @@
 class FavoriteDestination {
+  final int id;
+  final int destinationId;
   final String name;
-  final String location;
-  final double rating;
   final String imageUrl;
+  final String location;
   final String category;
-  final double price;
-  final List<String> facilities;
+  final double rating;
   final double distance;
-  final bool isFavorite;
 
   FavoriteDestination({
+    required this.id,
+    required this.destinationId,
     required this.name,
-    required this.location,
-    required this.rating,
     required this.imageUrl,
+    required this.location,
     required this.category,
-    required this.price,
-    required this.facilities,
-    required this.distance,
-    this.isFavorite = true,
+    required this.rating,
+    this.distance = 0.0,
   });
 
   factory FavoriteDestination.fromMap(Map<String, dynamic> map) {
     return FavoriteDestination(
-      name: map['name'] as String,
-      location: map['location'] as String,
-      rating: (map['rating'] is int)
-          ? (map['rating'] as int).toDouble()
-          : map['rating'] as double,
-      imageUrl: map['imageUrl'] as String,
-      category: map['category'] as String,
-      price: (map['price'] is int)
-          ? (map['price'] as int).toDouble()
-          : map['price'] as double,
-      facilities: List<String>.from(map['facilities'] as List),
-      distance: (map['distance'] is int)
-          ? (map['distance'] as int).toDouble()
-          : map['distance'] as double,
-      isFavorite: map['isFavorite'] as bool? ?? true,
+      id: map['id'],
+      destinationId: map['destination_id'],
+      name: map['name'] ?? '',
+      imageUrl: map['image_url'] ?? '',
+      location: map['address'] ?? '',
+      category: map['category_name'] ?? '',
+      rating: map['rating']?.toDouble() ?? 0.0,
+      distance: map['distance']?.toDouble() ?? 0.0,
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
+      'id': id,
+      'destination_id': destinationId,
       'name': name,
-      'location': location,
+      'image_url': imageUrl,
+      'address': location,
+      'category_name': category,
       'rating': rating,
-      'imageUrl': imageUrl,
-      'category': category,
-      'price': price,
-      'facilities': facilities,
       'distance': distance,
-      'isFavorite': isFavorite,
     };
   }
 }
