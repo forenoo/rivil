@@ -1,13 +1,374 @@
 import 'package:flutter/material.dart';
 import 'package:rivil/core/config/app_colors.dart';
+import 'package:rivil/widgets/custom_snackbar.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:rivil/core/services/location_service.dart';
+import 'package:geolocator/geolocator.dart';
 
-class DestinationDetailScreen extends StatelessWidget {
+class DestinationDetailScreen extends StatefulWidget {
   final Map<String, dynamic> destination;
 
   const DestinationDetailScreen({
     super.key,
     required this.destination,
   });
+
+  @override
+  State<DestinationDetailScreen> createState() =>
+      _DestinationDetailScreenState();
+}
+
+class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
+  bool _isFavorite = false;
+  bool _isLoadingFavorite = true;
+  String? _imageUrl;
+  bool _isLoadingImage = true;
+  final _commentController = TextEditingController();
+  bool _isSubmittingComment = false;
+  List<Map<String, dynamic>> _comments = [];
+  bool _isLoadingComments = true;
+  double? _distanceInKm;
+  bool _isLoadingDistance = true;
+  final LocationService _locationService = LocationService();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialData();
+    _trackDestinationView();
+    _calculateDistance();
+  }
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadInitialData() async {
+    await Future.wait([
+      _loadFavoriteStatus(),
+      _loadDestinationImage(),
+      _loadComments(),
+    ]);
+  }
+
+  Future<void> _loadFavoriteStatus() async {
+    try {
+      final isFavorited =
+          await _isDestinationFavorited(widget.destination['id'] as int);
+      if (mounted) {
+        setState(() {
+          _isFavorite = isFavorited;
+          _isLoadingFavorite = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading favorite status: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingFavorite = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadDestinationImage() async {
+    try {
+      final imageUrl = widget.destination['image_url'] as String?;
+      if (mounted) {
+        setState(() {
+          _imageUrl = imageUrl;
+          _isLoadingImage = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading destination image: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingImage = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _trackDestinationView() async {
+    try {
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser == null) return;
+
+      await Supabase.instance.client
+          .from('user_destination_interaction')
+          .insert({
+        'user_id': currentUser.id,
+        'destination_id': widget.destination['id'],
+        'type': 'view',
+        'category_id': widget.destination['category_id'],
+      });
+    } catch (e) {
+      print('Error tracking destination view: $e');
+    }
+  }
+
+  Future<bool> _isDestinationFavorited(int destinationId) async {
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    if (currentUser == null) return false;
+
+    final response = await Supabase.instance.client
+        .from('favorite_destination')
+        .select()
+        .eq('user_id', currentUser.id)
+        .eq('destination_id', destinationId)
+        .limit(1);
+
+    return response.isNotEmpty;
+  }
+
+  Future<void> _toggleFavorite() async {
+    if (_isLoadingFavorite) return;
+
+    setState(() {
+      _isLoadingFavorite = true;
+    });
+
+    try {
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser == null) return;
+
+      if (_isFavorite) {
+        await Supabase.instance.client
+            .from('favorite_destination')
+            .delete()
+            .eq('user_id', currentUser.id)
+            .eq('destination_id', widget.destination['id']);
+      } else {
+        await Supabase.instance.client.from('favorite_destination').insert({
+          'user_id': currentUser.id,
+          'destination_id': widget.destination['id'],
+        });
+      }
+
+      if (mounted) {
+        setState(() {
+          _isFavorite = !_isFavorite;
+          _isLoadingFavorite = false;
+        });
+      }
+    } catch (e) {
+      print('Error toggling favorite: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingFavorite = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadComments() async {
+    try {
+      print('Loading comments for destination ID: ${widget.destination['id']}');
+
+      final response = await Supabase.instance.client
+          .from('destination_comment')
+          .select()
+          .eq('destination_id', widget.destination['id'])
+          .order('created_at', ascending: false);
+
+      final commentsWithUsers = await Future.wait(
+          List<Map<String, dynamic>>.from(response).map((comment) async {
+        try {
+          final userId = comment['user_id'] as String?;
+          if (userId == null) {
+            return {...comment, 'user_data': null};
+          }
+
+          final currentUser = Supabase.instance.client.auth.currentUser;
+          Map<String, dynamic>? userData;
+
+          if (currentUser != null && currentUser.id == userId) {
+            userData = {'raw_user_meta_data': currentUser.userMetadata ?? {}};
+          } else {
+            try {
+              final profileData = await Supabase.instance.client
+                  .from('user_profile')
+                  .select()
+                  .eq('id', userId)
+                  .single();
+
+              userData = {
+                'raw_user_meta_data': {
+                  'name': profileData['full_name'] ?? profileData['username'],
+                  'avatar_url': profileData['avatar_url']
+                }
+              };
+            } catch (e) {
+              print('Error fetching profile data: $e');
+            }
+          }
+
+          return {...comment, 'user_data': userData};
+        } catch (e) {
+          print('Error fetching user data: $e');
+          return {...comment, 'user_data': null};
+        }
+      }));
+
+      if (mounted) {
+        setState(() {
+          _comments = commentsWithUsers;
+          _isLoadingComments = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading comments: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingComments = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _submitComment() async {
+    if (_commentController.text.trim().isEmpty) return;
+
+    setState(() {
+      _isSubmittingComment = true;
+    });
+
+    try {
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser == null) {
+        CustomSnackbar.show(
+          context: context,
+          message: 'Silakan login untuk memberikan komentar',
+          type: SnackbarType.warning,
+        );
+        setState(() {
+          _isSubmittingComment = false;
+        });
+        return;
+      }
+
+      await Supabase.instance.client.from('destination_comment').insert({
+        'user_id': currentUser.id,
+        'destination_id': widget.destination['id'],
+        'comment': _commentController.text.trim(),
+      });
+
+      // Clear the input after successful submission
+      _commentController.clear();
+
+      CustomSnackbar.show(
+        context: context,
+        message: 'Berhasil menambahkan komentar',
+        type: SnackbarType.success,
+      );
+
+      // Reload comments to show the new one
+      _loadComments();
+    } catch (e) {
+      print('Error submitting comment: $e');
+      CustomSnackbar.show(
+        context: context,
+        message: 'Gagal mengirim komentar',
+        type: SnackbarType.error,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmittingComment = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _calculateDistance() async {
+    try {
+      final hasPermission = await _locationService.requestLocationPermission();
+
+      if (!hasPermission) {
+        print('Location permission denied');
+        if (mounted) {
+          setState(() {
+            _isLoadingDistance = false;
+          });
+        }
+        return;
+      }
+
+      final serviceEnabled = await _locationService.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        print('Location services disabled');
+        if (mounted) {
+          setState(() {
+            _isLoadingDistance = false;
+          });
+        }
+        return;
+      }
+
+      final position = await _locationService.getCurrentPosition();
+      if (position == null) {
+        print('Could not get current position');
+        if (mounted) {
+          setState(() {
+            _isLoadingDistance = false;
+          });
+        }
+        return;
+      }
+
+      if (mounted) {
+        // Safely extract latitude and longitude, handling potential type issues
+        double? destinationLat;
+        double? destinationLng;
+
+        final latValue = widget.destination['latitude'];
+        final lngValue = widget.destination['longitude'];
+
+        // Handle different possible data types
+        if (latValue is double) {
+          destinationLat = latValue;
+        } else if (latValue is String) {
+          destinationLat = double.tryParse(latValue);
+        }
+
+        if (lngValue is double) {
+          destinationLng = lngValue;
+        } else if (lngValue is String) {
+          destinationLng = double.tryParse(lngValue);
+        }
+
+        if (destinationLat != null && destinationLng != null) {
+          final distanceInMeters = Geolocator.distanceBetween(
+            position.latitude,
+            position.longitude,
+            destinationLat,
+            destinationLng,
+          );
+
+          setState(() {
+            _distanceInKm = distanceInMeters / 1000;
+            _isLoadingDistance = false;
+          });
+        } else {
+          print(
+              'Invalid destination coordinates: lat=$latValue, lng=$lngValue');
+          setState(() {
+            _isLoadingDistance = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error calculating distance: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingDistance = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,10 +386,10 @@ class DestinationDetailScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   _buildOverviewSection(context),
                   const SizedBox(height: 16),
-                  _buildLocationSection(context),
+                  _buildAddCommentSection(context),
                   const SizedBox(height: 16),
                   _buildReviewsSection(context),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -48,16 +409,25 @@ class DestinationDetailScreen extends StatelessWidget {
         background: Stack(
           children: [
             // Hero image
-            Image.asset(
-              destination['imageUrl'] as String,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
+            if (_isLoadingImage)
+              Container(
                 color: Colors.grey.shade300,
-                child: const Icon(Icons.image, size: 50, color: Colors.grey),
+                child: const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else
+              Image.network(
+                _imageUrl ??
+                    'https://picsum.photos/800/400?random=${widget.destination['id']}',
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  color: Colors.grey.shade300,
+                  child: const Icon(Icons.image, size: 50, color: Colors.grey),
+                ),
               ),
-            ),
-            // Gradient overlay for better text visibility
+            // Gradient overlay
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -106,19 +476,22 @@ class DestinationDetailScreen extends StatelessWidget {
               ),
             ],
           ),
-          child: IconButton(
-            icon: Icon(
-              destination['isFavorite'] as bool
-                  ? Icons.favorite
-                  : Icons.favorite_border,
-              color: destination['isFavorite'] as bool
-                  ? Colors.red
-                  : Colors.black87,
-            ),
-            onPressed: () {
-              // Toggle favorite status (to be implemented)
-            },
-          ),
+          child: _isLoadingFavorite
+              ? const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              : IconButton(
+                  icon: Icon(
+                    _isFavorite ? Icons.favorite : Icons.favorite_border,
+                    color: _isFavorite ? Colors.red : Colors.black87,
+                  ),
+                  onPressed: _toggleFavorite,
+                ),
         ),
       ],
     );
@@ -126,12 +499,14 @@ class DestinationDetailScreen extends StatelessWidget {
 
   Widget _buildDestinationTitle(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final rating = widget.destination['rating'] as double? ?? 0.0;
+    final ratingCount = widget.destination['rating_count'] as int? ?? 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          destination['name'] as String,
+          widget.destination['name'] as String,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -141,21 +516,16 @@ class DestinationDetailScreen extends StatelessWidget {
           children: [
             Icon(Icons.location_on_outlined, size: 16, color: Colors.grey[600]),
             const SizedBox(width: 4),
-            Text(
-              destination['location'] as String,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Icon(Icons.category_outlined, size: 16, color: Colors.grey[600]),
-            const SizedBox(width: 4),
-            Text(
-              destination['category'] as String,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 14,
+            Expanded(
+              child: Text(
+                widget.destination['address'] as String? ??
+                    'Lokasi tidak tersedia',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 14,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -179,67 +549,78 @@ class DestinationDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    '${destination['rating']}',
+                    rating.toString(),
                     style: TextStyle(
                       color: colorScheme.primary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.jordyBlue200,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.location_on,
-                    size: 16,
-                    color: colorScheme.primary,
-                  ),
                   const SizedBox(width: 4),
                   Text(
-                    '${destination['distance']} km',
+                    '(${ratingCount.toString()})',
                     style: TextStyle(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.bold,
+                      color: colorScheme.primary.withOpacity(0.8),
+                      fontSize: 12,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.monetization_on_outlined,
-                    size: 16,
-                    color: Colors.green,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Rp ${destination['price']}',
-                    style: const TextStyle(
-                      color: Colors.green,
-                      fontWeight: FontWeight.bold,
+            if (_distanceInKm != null || _isLoadingDistance)
+              const SizedBox(width: 8),
+            if (_isLoadingDistance)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.directions_walk,
+                      size: 16,
+                      color: Colors.amber.shade700,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 4),
+                    SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.amber.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else if (_distanceInKm != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.directions_walk,
+                      size: 16,
+                      color: Colors.amber.shade700,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${_distanceInKm!.toStringAsFixed(1)} km',
+                      style: TextStyle(
+                        color: Colors.amber.shade700,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
           ],
         ),
       ],
@@ -247,12 +628,8 @@ class DestinationDetailScreen extends StatelessWidget {
   }
 
   Widget _buildOverviewSection(BuildContext context) {
-    // Using a mock description since it's not in the current data model
-    const description = """
-Wisata ini merupakan salah satu destinasi favorit di Indonesia yang menawarkan pemandangan alam yang menakjubkan. Pengunjung dapat menikmati keindahan panorama alam, udara yang sejuk, dan berbagai aktivitas menarik yang tersedia di sekitar lokasi.
-
-Dikenal dengan keunikan dan keindahannya, tempat ini telah menjadi tujuan wisata yang populer bagi wisatawan lokal maupun mancanegara. Setiap tahun, ribuan pengunjung datang untuk menyaksikan keindahan alam yang ditawarkan.
-""";
+    final description = widget.destination['description'] as String? ??
+        'Tidak ada deskripsi yang tersedia untuk destinasi ini.';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -275,114 +652,87 @@ Dikenal dengan keunikan dan keindahannya, tempat ini telah menjadi tujuan wisata
     );
   }
 
-  Widget _buildLocationSection(BuildContext context) {
+  Widget _buildReviewsSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Lokasi',
+          'Komentar',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
         ),
         const SizedBox(height: 12),
-        Container(
-          height: 200,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: Colors.grey.shade300,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.map,
-                  size: 48,
-                  color: Colors.grey,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  destination['location'] as String,
-                  style: const TextStyle(
-                    color: Colors.grey,
-                    fontWeight: FontWeight.bold,
+        _isLoadingComments
+            ? const Center(
+                child: CircularProgressIndicator(),
+              )
+            : _comments.isEmpty
+                ? Center(
+                    child: Text(
+                      'Belum ada komentar',
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                  )
+                : Column(
+                    children: _comments.map((comment) {
+                      // Debug the comment structure
+                      print('Processing comment: $comment');
+
+                      // Get user data
+                      final userData = comment['user_data'];
+                      Map<String, dynamic>? userMetaData;
+
+                      if (userData != null &&
+                          userData is Map<String, dynamic>) {
+                        userMetaData = userData['raw_user_meta_data']
+                            as Map<String, dynamic>?;
+                      }
+
+                      final userName =
+                          userMetaData?['name'] as String? ?? 'Anonymous';
+                      final photoUrl = userMetaData?['avatar_url'] as String? ??
+                          'https://ui-avatars.com/api/?name=${Uri.encodeComponent(userName)}';
+
+                      final createdAt =
+                          DateTime.parse(comment['created_at'] as String);
+                      final formattedDate =
+                          '${createdAt.day} ${_getMonthName(createdAt.month)} ${createdAt.year}';
+
+                      return _buildCommentCard(
+                        context,
+                        {
+                          'name': userName,
+                          'photo': photoUrl,
+                          'date': formattedDate,
+                          'comment': comment['comment'] as String? ?? '',
+                        },
+                      );
+                    }).toList(),
                   ),
-                ),
-                const SizedBox(height: 8),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    // Open maps action to be implemented
-                  },
-                  icon: const Icon(Icons.directions),
-                  label: const Text('Arahkan'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
       ],
     );
   }
 
-  Widget _buildReviewsSection(BuildContext context) {
-    // Mock reviews
-    final reviews = [
-      {
-        'name': 'Ahmad Fauzi',
-        'photo': 'https://randomuser.me/api/portraits/men/32.jpg',
-        'rating': 5.0,
-        'date': '24 Jun 2023',
-        'comment':
-            'Tempat yang sangat indah dan terawat dengan baik. Fasilitas lengkap dan pelayanan ramah.',
-      },
-      {
-        'name': 'Siti Rahayu',
-        'photo': 'https://randomuser.me/api/portraits/women/44.jpg',
-        'rating': 4.5,
-        'date': '15 Mei 2023',
-        'comment':
-            'Pemandangan sangat bagus dan udara sejuk. Akses jalan cukup baik meskipun ada beberapa bagian yang rusak.',
-      },
+  String _getMonthName(int month) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des'
     ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Ulasan',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            TextButton(
-              onPressed: () {
-                // View all reviews action
-              },
-              child: Text(
-                'Lihat Semua',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        ...reviews.map((review) => _buildReviewCard(context, review)),
-      ],
-    );
+    return months[month - 1];
   }
 
-  Widget _buildReviewCard(BuildContext context, Map<String, dynamic> review) {
+  Widget _buildCommentCard(BuildContext context, Map<String, dynamic> comment) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -397,8 +747,10 @@ Dikenal dengan keunikan dan keindahannya, tempat ini telah menjadi tujuan wisata
           Row(
             children: [
               CircleAvatar(
-                backgroundImage: NetworkImage(review['photo'] as String),
+                backgroundImage: NetworkImage(comment['photo'] as String),
                 radius: 20,
+                onBackgroundImageError: (_, __) {},
+                backgroundColor: Colors.grey.shade200,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -406,37 +758,18 @@ Dikenal dengan keunikan dan keindahannya, tempat ini telah menjadi tujuan wisata
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      review['name'] as String,
+                      comment['name'] as String,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Row(
-                          children: List.generate(
-                            5,
-                            (index) => Icon(
-                              index < (review['rating'] as double).floor()
-                                  ? Icons.star
-                                  : index < (review['rating'] as double)
-                                      ? Icons.star_half
-                                      : Icons.star_border,
-                              size: 16,
-                              color: Colors.amber,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          review['date'] as String,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
+                    Text(
+                      comment['date'] as String,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
                     ),
                   ],
                 ),
@@ -445,13 +778,80 @@ Dikenal dengan keunikan dan keindahannya, tempat ini telah menjadi tujuan wisata
           ),
           const SizedBox(height: 12),
           Text(
-            review['comment'] as String,
+            comment['comment'] as String,
             style: const TextStyle(
               fontSize: 14,
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAddCommentSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Tambahkan Komentar',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _commentController,
+              maxLines: 4,
+              decoration: InputDecoration(
+                hintText: 'Bagikan pengalaman Anda...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide:
+                      BorderSide(color: Theme.of(context).colorScheme.primary),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _isSubmittingComment ? null : _submitComment,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: _isSubmittingComment
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text('Kirim Komentar'),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

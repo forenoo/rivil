@@ -353,7 +353,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [

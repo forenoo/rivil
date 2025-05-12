@@ -15,11 +15,12 @@ import 'package:rivil/features/favorite/presentation/screens/favorites_screen.da
 import 'package:rivil/features/home/presentation/screens/home_screen.dart';
 import 'package:rivil/features/onboarding/domain/services/onboarding_service.dart';
 import 'package:rivil/features/onboarding/presentation/widgets/onboarding_gate.dart';
-import 'package:rivil/features/home/presentation/bloc/category_bloc.dart';
+import 'package:rivil/features/home/presentation/bloc/destination_bloc.dart';
+import 'package:rivil/features/home/data/repositories/destination_repository_impl.dart';
+import 'package:rivil/features/home/domain/repository/destination_repository.dart';
 import 'package:rivil/features/exploration/presentation/screens/exploration_screen.dart';
 import 'package:rivil/features/profile/presentation/screens/profile_screen.dart';
 
-// Global key to access MainNavigationWrapper state
 final GlobalKey<_MainNavigationWrapperState> mainNavigationKey =
     GlobalKey<_MainNavigationWrapperState>();
 
@@ -57,18 +58,24 @@ class RivilApp extends StatelessWidget {
         RepositoryProvider<FavoriteRepository>(
           create: (context) => FavoriteRepositoryImpl(),
         ),
+        RepositoryProvider<DestinationRepository>(
+          create: (context) =>
+              DestinationRepositoryImpl(supabaseService.client),
+        ),
       ],
       child: MultiBlocProvider(
         providers: [
           BlocProvider<AuthBloc>(
             create: (context) => AuthBloc(context.read<AuthRepository>()),
           ),
-          BlocProvider<CategoryBloc>(
-            create: (context) => CategoryBloc()..add(CategoriesLoaded()),
-          ),
           BlocProvider<FavoritesBloc>(
             create: (context) =>
                 FavoritesBloc(context.read<FavoriteRepository>()),
+          ),
+          BlocProvider<DestinationBloc>(
+            create: (context) => DestinationBloc(
+              context.read<DestinationRepository>(),
+            )..add(LoadDestinations()),
           ),
         ],
         child: Builder(builder: (context) {

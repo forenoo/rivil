@@ -1,18 +1,69 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rivil/features/auth/data/models/user_profile_model.dart';
 import 'package:rivil/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:rivil/features/profile/presentation/screens/personal_info_screen.dart';
 import 'package:rivil/features/profile/presentation/screens/user_destinations_screen.dart';
 import 'package:rivil/widgets/slide_page_route.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  UserProfileModel? _userProfile;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser != null) {
+        final response = await Supabase.instance.client
+            .from('user_profile')
+            .select()
+            .eq('user_id', currentUser.id)
+            .single();
+
+        if (mounted) {
+          setState(() {
+            _userProfile = UserProfileModel.fromJson(response);
+            _isLoading = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading user profile: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -85,20 +136,17 @@ class ProfileScreen extends StatelessWidget {
 
   Widget _buildProfileHeader(BuildContext context) {
     final theme = Theme.of(context);
-    final session = Supabase.instance.client.auth.currentSession;
 
-    String name = 'User';
-    String email = '';
-    String? avatarUrl;
-
-    if (session != null) {
-      final userData = session.user.userMetadata;
-      if (userData != null) {
-        name = userData['name'] ?? 'User';
-        avatarUrl = userData['avatar_url'];
-      }
-      email = session.user.email ?? '';
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
     }
+
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    String name = _userProfile?.fullName ?? _userProfile?.username ?? 'User';
+    String email = _userProfile?.email ?? currentUser?.email ?? '';
+    String? avatarUrl = _userProfile?.avatarUrl;
 
     return Column(
       children: [

@@ -1,3 +1,4 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SupabaseService {
@@ -12,9 +13,8 @@ class SupabaseService {
 
   static Future<SupabaseService> initialize() async {
     await Supabase.initialize(
-      url: 'https://gvegwmkvdgjftisfndbr.supabase.co',
-      anonKey:
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd2ZWd3bWt2ZGdqZnRpc2ZuZGJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYyMzExMDksImV4cCI6MjA2MTgwNzEwOX0.Yldl9oGJDzZEcGgtrJBhLS-BU5bKFQoHIht1-F-sHxk',
+      url: dotenv.env['SUPABASE_URL'] ?? '',
+      anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
     );
 
     return SupabaseService(client: Supabase.instance.client);

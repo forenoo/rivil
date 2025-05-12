@@ -24,6 +24,12 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Rivil membutuhkan akses kamera untuk mengambil foto profil</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Rivil membutuhkan akses galeri untuk memilih foto profil</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Rivil membutuhkan akses mikrofon untuk merekam video</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -45,5 +51,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Rivil needs access to your location to find nearby destinations</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Rivil needs access to your location to find nearby destinations</string>
 </dict>
 </plist>

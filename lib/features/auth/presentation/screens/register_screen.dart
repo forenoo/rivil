@@ -105,9 +105,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     TextFormField(
                       controller: _nameController,
                       decoration: InputDecoration(
-                        labelText: 'Nama Panggilan',
+                        labelText: 'Nama Pengguna',
                         floatingLabelBehavior: FloatingLabelBehavior.never,
-                        hintText: 'Masukkan nama panggilan Anda',
+                        hintText: 'Masukkan nama pengguna Anda',
                         filled: true,
                         fillColor: Colors.grey.shade100,
                         border: OutlineInputBorder(

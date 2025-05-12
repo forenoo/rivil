@@ -20,11 +20,22 @@ dependencies:
 
   # Storage
   shared_preferences: ^2.5.3
+  image_picker: ^1.1.2
+  flutter_image_compress: ^2.4.0
+  path_provider: ^2.1.5
 
   # UI
   cached_network_image: ^3.4.1
   shimmer: ^3.0.0
   flutter_svg: ^2.1.0
+
+  # Location
+  geolocator: ^14.0.0
+  permission_handler: ^12.0.0+1
+
+  # Environment Variables
+  flutter_dotenv: ^5.2.1
+  http: ^1.4.0
 
 dev_dependencies:
   flutter_test:
@@ -39,6 +50,7 @@ flutter:
     - assets/fonts/
     - assets/images/
     - assets/vectors/
+    - .env
 
   fonts:
     - family: Manrope

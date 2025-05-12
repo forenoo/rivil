@@ -22,7 +22,7 @@ class AppColors {
   // Background Colors
   static const Color background = Colors.white;
   static const Color surface = Colors.white;
-  static const Color surfaceVariant = jordyBlue100;
+  static const Color surfaceVariant = Colors.white;
 
   // Text Colors
   static const Color textPrimary = jordyBlue950;

@@ -487,7 +487,6 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
     return BlocProvider(
       create: (_) => ExplorationBloc(),
       child: Scaffold(
-        backgroundColor: Colors.white,
         body: BlocBuilder<ExplorationBloc, ExplorationState>(
           builder: (context, state) {
             return SafeArea(
