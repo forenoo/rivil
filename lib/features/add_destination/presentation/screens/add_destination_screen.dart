@@ -8,8 +8,10 @@ import 'package:rivil/features/add_destination/domain/repository/destination_add
 import 'package:rivil/features/add_destination/data/repositories/destination_add_repository_impl.dart';
 import 'package:rivil/features/add_destination/presentation/bloc/add_destination_bloc.dart';
 import 'package:rivil/features/add_destination/presentation/widgets/map_location_picker.dart';
+import 'package:rivil/features/add_destination/presentation/widgets/add_destination_skeleton_screen.dart';
 import 'package:rivil/widgets/custom_snackbar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shimmer/shimmer.dart';
 
 class AddDestinationScreen extends StatefulWidget {
   const AddDestinationScreen({super.key});
@@ -86,7 +88,7 @@ class _AddDestinationScreenState extends State<AddDestinationScreen> {
                   'Tambah Destinasi',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 17,
+                    fontSize: 16,
                     letterSpacing: -0.5,
                   ),
                 ),
@@ -97,7 +99,7 @@ class _AddDestinationScreenState extends State<AddDestinationScreen> {
                 shadowColor: Colors.transparent,
                 foregroundColor: colorScheme.primary,
                 leading: IconButton(
-                  icon: const Icon(Icons.arrow_back_ios, size: 20),
+                  icon: const Icon(Icons.arrow_back_ios, size: 18),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ),
@@ -118,15 +120,15 @@ class _AddDestinationScreenState extends State<AddDestinationScreen> {
 
                             // Content Container
                             Container(
-                              margin: const EdgeInsets.only(top: 16),
+                              margin: const EdgeInsets.only(top: 10),
                               padding:
-                                  const EdgeInsets.symmetric(horizontal: 20),
+                                  const EdgeInsets.symmetric(horizontal: 16),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   // Basic Information Section
                                   _buildSectionTitle('Informasi Dasar'),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: 10),
 
                                   // Name Field
                                   _buildInputField(
@@ -159,14 +161,14 @@ class _AddDestinationScreenState extends State<AddDestinationScreen> {
                                     placeholder:
                                         'Jelaskan tentang destinasi ini',
                                     icon: CupertinoIcons.text_alignleft,
-                                    maxLines: 4,
+                                    maxLines: 3,
                                     validator: (value) => value?.isEmpty ?? true
                                         ? 'Mohon masukkan deskripsi'
                                         : null,
                                   ),
 
                                   _buildSectionTitle('Lokasi'),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: 10),
 
                                   // Address Field
                                   _buildInputField(
@@ -181,27 +183,27 @@ class _AddDestinationScreenState extends State<AddDestinationScreen> {
 
                                   // Map Location Picker
                                   const Padding(
-                                    padding: EdgeInsets.only(top: 8, bottom: 4),
+                                    padding: EdgeInsets.only(top: 4, bottom: 2),
                                     child: Text(
                                       'Pilih Lokasi',
                                       style: TextStyle(
-                                        fontSize: 15,
+                                        fontSize: 14,
                                         fontWeight: FontWeight.w500,
                                         color: Colors.black54,
                                       ),
                                     ),
                                   ),
                                   Container(
-                                    height: 315,
+                                    height: 250,
                                     margin: const EdgeInsets.only(
-                                        top: 8, bottom: 24),
+                                        top: 6, bottom: 16),
                                     decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(16),
+                                      borderRadius: BorderRadius.circular(12),
                                       boxShadow: [
                                         BoxShadow(
                                           color: Colors.black.withOpacity(0.05),
                                           offset: const Offset(0, 2),
-                                          blurRadius: 8,
+                                          blurRadius: 6,
                                         ),
                                       ],
                                     ),
@@ -220,7 +222,7 @@ class _AddDestinationScreenState extends State<AddDestinationScreen> {
 
                                   // Submit Button
                                   _buildSubmitButton(context, state),
-                                  const SizedBox(height: 40),
+                                  const SizedBox(height: 24),
                                 ],
                               ),
                             ),
@@ -235,12 +237,8 @@ class _AddDestinationScreenState extends State<AddDestinationScreen> {
                       state is CategoriesLoading)
                     Positioned.fill(
                       child: Container(
-                        color: Colors.black.withOpacity(0.2),
-                        child: const Center(
-                          child: CupertinoActivityIndicator(
-                            radius: 16,
-                          ),
-                        ),
+                        color: Colors.white,
+                        child: const AddDestinationSkeletonScreen(),
                       ),
                     ),
                 ],
@@ -256,7 +254,7 @@ class _AddDestinationScreenState extends State<AddDestinationScreen> {
     return GestureDetector(
       onTap: _pickImage,
       child: Container(
-        height: 220,
+        height: 180,
         width: double.infinity,
         color: _selectedImagePath != null ? Colors.black : Colors.grey[100],
         child: _selectedImagePath != null
@@ -268,24 +266,24 @@ class _AddDestinationScreenState extends State<AddDestinationScreen> {
                     fit: BoxFit.cover,
                   ),
                   Positioned(
-                    bottom: 16,
-                    right: 16,
+                    bottom: 12,
+                    right: 12,
                     child: Container(
-                      height: 40,
-                      width: 40,
+                      height: 36,
+                      width: 36,
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(18),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.1),
-                            blurRadius: 8,
+                            blurRadius: 6,
                           ),
                         ],
                       ),
                       child: const Icon(
                         CupertinoIcons.camera,
-                        size: 22,
+                        size: 20,
                         color: Colors.black87,
                       ),
                     ),
@@ -297,14 +295,14 @@ class _AddDestinationScreenState extends State<AddDestinationScreen> {
                 children: [
                   Icon(
                     CupertinoIcons.photo_camera,
-                    size: 48,
+                    size: 40,
                     color: Colors.grey[400],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Text(
                     'Tambah Foto',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: FontWeight.w500,
                       color: Colors.grey[500],
                     ),
@@ -324,44 +322,37 @@ class _AddDestinationScreenState extends State<AddDestinationScreen> {
     String? Function(String?)? validator,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.only(bottom: 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
             style: const TextStyle(
-              fontSize: 15,
+              fontSize: 14,
               fontWeight: FontWeight.w500,
               color: Colors.black54,
             ),
           ),
-          const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey[200]!),
-            ),
-            child: TextFormField(
-              controller: controller,
-              decoration: InputDecoration(
-                hintText: placeholder,
-                hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
-                prefixIcon: Icon(icon, color: Colors.grey[500], size: 20),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  vertical: 16,
-                  horizontal: 16,
-                ),
+          const SizedBox(height: 4),
+          TextFormField(
+            controller: controller,
+            decoration: InputDecoration(
+              hintText: placeholder,
+              hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+              prefixIcon: Icon(icon, color: Colors.grey[500], size: 18),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide.none,
               ),
-              style: const TextStyle(fontSize: 15),
-              maxLines: maxLines,
-              validator: validator,
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: 12,
+                horizontal: 12,
+              ),
             ),
+            style: const TextStyle(fontSize: 14),
+            maxLines: maxLines,
+            validator: validator,
           ),
         ],
       ),
@@ -376,112 +367,86 @@ class _AddDestinationScreenState extends State<AddDestinationScreen> {
     }
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.only(bottom: 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             'Kategori',
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 14,
               fontWeight: FontWeight.w500,
               color: Colors.black54,
             ),
           ),
-          const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.withOpacity(0.2)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
-                  offset: const Offset(0, 2),
-                  blurRadius: 5,
-                ),
-              ],
-            ),
-            child: Theme(
-              data: Theme.of(context).copyWith(
-                inputDecorationTheme: InputDecorationTheme(
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                ),
-                canvasColor: Colors.white,
-              ),
-              child: DropdownButtonFormField<int>(
-                value: _selectedCategoryId,
-                icon: Container(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: Icon(
-                    CupertinoIcons.chevron_down,
-                    color: Colors.grey[700],
-                    size: 14,
-                  ),
-                ),
-                decoration: InputDecoration(
-                  border: InputBorder.none,
-                  prefixIcon: Padding(
-                    padding: const EdgeInsets.only(left: 12, right: 8),
-                    child: Icon(
-                      CupertinoIcons.tag,
-                      color: Colors.grey[600],
-                      size: 20,
-                    ),
-                  ),
-                  prefixIconConstraints: const BoxConstraints(
-                    minWidth: 40,
-                    minHeight: 40,
-                  ),
-                ),
-                style: const TextStyle(
-                  color: Colors.black87,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: -0.2,
-                ),
-                dropdownColor: Colors.white,
-                menuMaxHeight: 300,
-                borderRadius: BorderRadius.circular(12),
-                itemHeight: 56,
-                items: categories.map((category) {
-                  return DropdownMenuItem<int>(
-                    value: category['id'] as int,
-                    child: Text(
-                      category['name'] as String,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedCategoryId = value;
-                  });
-                },
-                validator: (value) {
-                  if (value == null) {
-                    return 'Mohon pilih kategori';
-                  }
-                  return null;
-                },
-                hint: Text(
-                  'Pilih kategori',
-                  style: TextStyle(
-                    color: Colors.grey[400],
-                    fontSize: 15,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-                isExpanded: true,
+          const SizedBox(height: 4),
+          DropdownButtonFormField<int>(
+            value: _selectedCategoryId,
+            icon: Container(
+              padding: const EdgeInsets.only(right: 10),
+              child: Icon(
+                CupertinoIcons.chevron_down,
+                color: Colors.grey[700],
+                size: 12,
               ),
             ),
+            decoration: InputDecoration(
+              border: InputBorder.none,
+              prefixIcon: Padding(
+                padding: const EdgeInsets.only(left: 10, right: 6),
+                child: Icon(
+                  CupertinoIcons.tag,
+                  color: Colors.grey[600],
+                  size: 18,
+                ),
+              ),
+              prefixIconConstraints: const BoxConstraints(
+                minWidth: 36,
+                minHeight: 36,
+              ),
+            ),
+            style: const TextStyle(
+              color: Colors.black87,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              letterSpacing: -0.2,
+            ),
+            dropdownColor: Colors.white,
+            menuMaxHeight: 300,
+            borderRadius: BorderRadius.circular(10),
+            itemHeight: 48,
+            items: categories.map((category) {
+              return DropdownMenuItem<int>(
+                value: category['id'] as int,
+                child: Text(
+                  category['name'] as String,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              );
+            }).toList(),
+            onChanged: (value) {
+              setState(() {
+                _selectedCategoryId = value;
+              });
+            },
+            validator: (value) {
+              if (value == null) {
+                return 'Mohon pilih kategori';
+              }
+              return null;
+            },
+            hint: Text(
+              'Pilih kategori',
+              style: TextStyle(
+                color: Colors.grey[400],
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+            isExpanded: true,
           ),
         ],
       ),
@@ -492,8 +457,8 @@ class _AddDestinationScreenState extends State<AddDestinationScreen> {
     return SizedBox(
       width: double.infinity,
       child: CupertinoButton(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        borderRadius: BorderRadius.circular(12),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        borderRadius: BorderRadius.circular(10),
         color: Theme.of(context).colorScheme.primary,
         onPressed: state is AddDestinationLoading
             ? null
@@ -514,13 +479,24 @@ class _AddDestinationScreenState extends State<AddDestinationScreen> {
                 }
               },
         child: state is AddDestinationLoading
-            ? const CupertinoActivityIndicator(color: Colors.white)
+            ? Shimmer.fromColors(
+                baseColor: Colors.white.withOpacity(0.5),
+                highlightColor: Colors.white,
+                child: const Text(
+                  'Menambahkan...',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                ),
+              )
             : const Text(
                 'Tambahkan Destinasi',
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
-                  fontSize: 16,
+                  fontSize: 15,
                 ),
               ),
       ),
@@ -529,11 +505,11 @@ class _AddDestinationScreenState extends State<AddDestinationScreen> {
 
   Widget _buildSectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.only(top: 16, bottom: 8),
+      padding: const EdgeInsets.only(top: 12, bottom: 6),
       child: Text(
         title,
         style: const TextStyle(
-          fontSize: 18,
+          fontSize: 16,
           fontWeight: FontWeight.w600,
           color: Colors.black,
           letterSpacing: -0.5,

@@ -20,7 +20,8 @@ class ExplorationRepositoryImpl implements ExplorationRepository {
           .order('created_at', ascending: false)
           .range(from, to);
 
-      return _transformDestinations(response);
+      final destinations = _transformDestinations(response);
+      return await _addAppRatings(destinations);
     } catch (e) {
       throw Exception('Failed to fetch destinations: $e');
     }
@@ -56,7 +57,8 @@ class ExplorationRepositoryImpl implements ExplorationRepository {
           .or('name.ilike.%$lowercaseQuery%,address.ilike.%$lowercaseQuery%')
           .range(from, to);
 
-      return _transformDestinations(response);
+      final destinations = _transformDestinations(response);
+      return await _addAppRatings(destinations);
     } catch (e) {
       throw Exception('Failed to search destinations: $e');
     }
@@ -100,10 +102,11 @@ class ExplorationRepositoryImpl implements ExplorationRepository {
       final response =
           await query.order('rating', ascending: false).range(from, to);
       final destinations = _transformDestinations(response);
+      final destinationsWithAppRatings = await _addAppRatings(destinations);
 
       // Apply distance calculation if coordinates are provided
       if (latitude != null && longitude != null) {
-        return destinations.map((destination) {
+        return destinationsWithAppRatings.map((destination) {
           final destLatStr = destination['latitude'] as String?;
           final destLonStr = destination['longitude'] as String?;
 
@@ -127,7 +130,7 @@ class ExplorationRepositoryImpl implements ExplorationRepository {
       }
 
       // Add placeholder distance if no coordinates
-      return destinations.map((destination) {
+      return destinationsWithAppRatings.map((destination) {
         destination['distance'] = 0.0;
         return destination;
       }).toList();
@@ -145,6 +148,46 @@ class ExplorationRepositoryImpl implements ExplorationRepository {
   ) {
     return Geolocator.distanceBetween(lat1, lon1, lat2, lon2) /
         1000; // Convert to km
+  }
+
+  // Method to get app ratings for destinations
+  Future<List<Map<String, dynamic>>> _addAppRatings(
+      List<Map<String, dynamic>> destinations) async {
+    try {
+      // For each destination, fetch app ratings
+      for (var destination in destinations) {
+        final destinationId = destination['id'] as int;
+
+        try {
+          final response = await _supabase
+              .from('destination_rating')
+              .select('rating')
+              .eq('destination_id', destinationId);
+
+          if (response.isNotEmpty) {
+            final ratings = List<Map<String, dynamic>>.from(response);
+            final ratingSum = ratings.fold<int>(
+                0, (sum, rating) => sum + (rating['rating'] as int? ?? 0));
+
+            destination['app_rating_average'] =
+                ratings.isEmpty ? 0.0 : ratingSum / ratings.length;
+            destination['app_rating_count'] = ratings.length;
+          } else {
+            destination['app_rating_average'] = 0.0;
+            destination['app_rating_count'] = 0;
+          }
+        } catch (e) {
+          print('Error loading app rating for destination $destinationId: $e');
+          destination['app_rating_average'] = 0.0;
+          destination['app_rating_count'] = 0;
+        }
+      }
+
+      return destinations;
+    } catch (e) {
+      print('Error adding app ratings: $e');
+      return destinations; // Return original list if adding ratings fails
+    }
   }
 
   // Transform the Supabase response to the expected format
@@ -168,6 +211,7 @@ class ExplorationRepositoryImpl implements ExplorationRepository {
         'url': data['url'] as String?,
         'created_at': data['created_at'] as String?,
         'added_by': data['added_by'] as String?,
+        'type': data['type'] as String? ?? 'added_by_google',
       };
     }).toList();
   }

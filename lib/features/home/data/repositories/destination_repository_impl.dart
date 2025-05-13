@@ -7,25 +7,56 @@ class DestinationRepositoryImpl implements DestinationRepository {
   final SupabaseClient _supabase;
   final RecommendationService _recommendationService;
 
+  // Add caching for destinations
+  final Map<String, List<Map<String, dynamic>>> _destinationsCache = {};
+  final Map<int, Map<String, dynamic>> _appRatingsCache = {};
+  final Duration _cacheDuration = const Duration(minutes: 15);
+  DateTime? _lastFetchTime;
+
   DestinationRepositoryImpl(this._supabase)
       : _recommendationService = RecommendationService(_supabase);
 
+  bool get _isCacheValid =>
+      _lastFetchTime != null &&
+      DateTime.now().difference(_lastFetchTime!) < _cacheDuration;
+
   @override
   Future<List<Map<String, dynamic>>> getDestinations() async {
+    // Check if we have a valid cache
+    if (_isCacheValid && _destinationsCache.containsKey('all')) {
+      return _destinationsCache['all']!;
+    }
+
     try {
       final response = await _supabase
           .from('destination')
           .select()
           .order('created_at', ascending: false);
 
-      return _transformDestinations(response);
+      final destinations = _transformDestinations(response);
+      final destinationsWithRatings = await _addAppRatings(destinations);
+
+      // Cache the result
+      _destinationsCache['all'] = destinationsWithRatings;
+      _lastFetchTime = DateTime.now();
+
+      return destinationsWithRatings;
     } catch (e) {
+      // Return cached data even if expired in case of error
+      if (_destinationsCache.containsKey('all')) {
+        return _destinationsCache['all']!;
+      }
       throw Exception('Failed to fetch destinations: $e');
     }
   }
 
   @override
   Future<List<Map<String, dynamic>>> getPopularDestinations() async {
+    // Check if we have a valid cache
+    if (_isCacheValid && _destinationsCache.containsKey('popular')) {
+      return _destinationsCache['popular']!;
+    }
+
     try {
       final response = await _supabase
           .from('destination')
@@ -33,8 +64,18 @@ class DestinationRepositoryImpl implements DestinationRepository {
           .order('rating', ascending: false)
           .limit(5);
 
-      return _transformDestinations(response);
+      final destinations = _transformDestinations(response);
+      final destinationsWithRatings = await _addAppRatings(destinations);
+
+      // Cache the result
+      _destinationsCache['popular'] = destinationsWithRatings;
+
+      return destinationsWithRatings;
     } catch (e) {
+      // Return cached data even if expired in case of error
+      if (_destinationsCache.containsKey('popular')) {
+        return _destinationsCache['popular']!;
+      }
       throw Exception('Failed to fetch popular destinations: $e');
     }
   }
@@ -49,10 +90,13 @@ class DestinationRepositoryImpl implements DestinationRepository {
       }
 
       // Get personalized recommendations for the current user
-      return await _recommendationService.getPersonalizedRecommendations(
+      final recommendations =
+          await _recommendationService.getPersonalizedRecommendations(
         userId: currentUser.id,
         limit: 10,
       );
+
+      return await _addAppRatings(recommendations);
     } catch (e) {
       print('Error getting recommended destinations: $e');
       return _getFallbackRecommendations();
@@ -67,7 +111,8 @@ class DestinationRepositoryImpl implements DestinationRepository {
         .order('rating', ascending: false)
         .limit(10);
 
-    return _transformDestinations(response);
+    final destinations = _transformDestinations(response);
+    return await _addAppRatings(destinations);
   }
 
   @override
@@ -85,8 +130,10 @@ class DestinationRepositoryImpl implements DestinationRepository {
       // Fetch all destinations
       final response = await _supabase.from('destination').select();
       final allDestinations = _transformDestinations(response);
+      final destinationsWithAppRatings = await _addAppRatings(allDestinations);
 
-      final destinationsWithDistance = allDestinations.map((destination) {
+      final destinationsWithDistance =
+          destinationsWithAppRatings.map((destination) {
         final destLat =
             double.tryParse(destination['latitude'] as String? ?? '0') ?? 0.0;
         final destLon =
@@ -161,15 +208,90 @@ class DestinationRepositoryImpl implements DestinationRepository {
           .limit(5);
 
       final destinations = _transformDestinations(response);
+      final destinationsWithAppRatings = await _addAppRatings(destinations);
 
       // Add placeholder distance
-      return destinations.map((destination) {
+      return destinationsWithAppRatings.map((destination) {
         destination['distance'] =
-            ((2 + destinations.indexOf(destination)) * 1.5).toStringAsFixed(1);
+            ((2 + destinationsWithAppRatings.indexOf(destination)) * 1.5)
+                .toStringAsFixed(1);
         return destination;
       }).toList();
     } catch (e) {
       throw Exception('Failed to fetch fallback nearby destinations: $e');
+    }
+  }
+
+  // Method to get app ratings for destinations
+  Future<List<Map<String, dynamic>>> _addAppRatings(
+      List<Map<String, dynamic>> destinations) async {
+    try {
+      // Filter out destinations that already have ratings in cache
+      final destinationsToProcess = destinations.where((destination) {
+        final id = destination['id'] as int;
+        return !_appRatingsCache.containsKey(id);
+      }).toList();
+
+      // If there are destinations that need ratings
+      if (destinationsToProcess.isNotEmpty) {
+        // Get all needed destination ids
+        final ids = destinationsToProcess.map((d) => d['id'] as int).toList();
+
+        // Fetch ratings for all destinations in a single query
+        final response = await _supabase
+            .from('destination_rating')
+            .select('destination_id, rating')
+            .filter('destination_id', 'in', '(${ids.join(",")})');
+
+        // Group ratings by destination
+        final Map<int, List<Map<String, dynamic>>> ratingsByDestination = {};
+        for (var rating in response) {
+          final destId = rating['destination_id'] as int;
+          ratingsByDestination[destId] ??= [];
+          ratingsByDestination[destId]!.add(rating);
+        }
+
+        // Process ratings for each destination
+        for (var destination in destinationsToProcess) {
+          final destinationId = destination['id'] as int;
+          final ratings = ratingsByDestination[destinationId] ?? [];
+
+          final ratingSum = ratings.fold<int>(
+              0, (sum, rating) => sum + (rating['rating'] as int? ?? 0));
+
+          final appRatingAverage =
+              ratings.isEmpty ? 0.0 : ratingSum / ratings.length;
+
+          // Update the destination
+          destination['app_rating_average'] = appRatingAverage;
+          destination['app_rating_count'] = ratings.length;
+
+          // Cache the rating info
+          _appRatingsCache[destinationId] = {
+            'app_rating_average': appRatingAverage,
+            'app_rating_count': ratings.length,
+          };
+        }
+      }
+
+      // Apply cached ratings to all destinations
+      for (var destination in destinations) {
+        final id = destination['id'] as int;
+        if (_appRatingsCache.containsKey(id)) {
+          destination['app_rating_average'] =
+              _appRatingsCache[id]!['app_rating_average'];
+          destination['app_rating_count'] =
+              _appRatingsCache[id]!['app_rating_count'];
+        } else {
+          destination['app_rating_average'] = 0.0;
+          destination['app_rating_count'] = 0;
+        }
+      }
+
+      return destinations;
+    } catch (e) {
+      print('Error adding app ratings: $e');
+      return destinations; // Return original list if adding ratings fails
     }
   }
 
@@ -189,6 +311,7 @@ class DestinationRepositoryImpl implements DestinationRepository {
         'longitude': data['longitude'] as String?,
         'image_url': data['image_url'] as String?,
         'added_by': data['added_by'] as String?,
+        'type': data['type'] as String? ?? 'added_by_google',
       };
     }).toList();
   }

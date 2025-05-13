@@ -25,3 +25,5 @@ class CheckIsFavorite extends FavoritesEvent {
 
   CheckIsFavorite(this.destinationId);
 }
+
+class UpdateFavoritesDistances extends FavoritesEvent {}

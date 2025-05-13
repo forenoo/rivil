@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rivil/core/config/app_colors.dart';
 import 'package:rivil/features/exploration/presentation/bloc/exploration_bloc.dart';
 import 'package:rivil/features/exploration/presentation/screens/destination_detail_screen.dart';
+import 'package:rivil/features/exploration/presentation/widgets/exploration_screen_skeleton.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:rivil/widgets/slide_page_route.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -20,6 +21,7 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   late ExplorationBloc _explorationBloc;
+  StreamSubscription? _blocSubscription;
 
   // Filter values
   double _minRating = 0;
@@ -33,8 +35,22 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
 
     // Initialize favorites after widget is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      print('Initializing favorites and distances after frame');
       _initializeFavorites();
-      _recalculateDistances();
+
+      // Don't calculate distances immediately - set up a listener instead
+      // to wait for ExplorationLoaded state
+    });
+
+    // Set up a listener for state changes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final bloc = context.read<ExplorationBloc>();
+      _blocSubscription = bloc.stream.listen((state) {
+        if (state is ExplorationLoaded) {
+          print('ExplorationLoaded state detected - calculating distances');
+          _recalculateDistances();
+        }
+      });
     });
   }
 
@@ -50,6 +66,7 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
     _searchController.dispose();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _blocSubscription?.cancel();
     super.dispose();
   }
 
@@ -83,20 +100,34 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
 
   // Method to recalculate distances for all visible destinations
   Future<void> _recalculateDistances() async {
-    if (_explorationBloc.state is! ExplorationLoaded) return;
+    if (_explorationBloc.state is! ExplorationLoaded) {
+      print('Distance not recalculated: state is not ExplorationLoaded');
+      return;
+    }
 
     try {
       final locationService = LocationService();
       final hasPermission = await locationService.requestLocationPermission();
 
-      if (!hasPermission) return;
+      if (!hasPermission) {
+        print('Distance not recalculated: no location permission');
+        return;
+      }
 
       final serviceEnabled = await locationService.isLocationServiceEnabled();
-      if (!serviceEnabled) return;
+      if (!serviceEnabled) {
+        print('Distance not recalculated: location service not enabled');
+        return;
+      }
 
       final position = await locationService.getCurrentPosition();
-      if (position == null) return;
+      if (position == null) {
+        print('Distance not recalculated: could not get current position');
+        return;
+      }
 
+      print(
+          'Adding UpdateDistancesEvent with lat: ${position.latitude}, lng: ${position.longitude}');
       _explorationBloc.add(UpdateDistancesEvent(
         latitude: position.latitude,
         longitude: position.longitude,
@@ -508,9 +539,7 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
 
   Widget _buildContent(ExplorationState state, BuildContext context) {
     if (state is ExplorationLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const ExplorationScreenSkeleton();
     } else if (state is ExplorationLoaded || state is ExplorationLoadingMore) {
       final destinations = state is ExplorationLoaded
           ? state.destinations
@@ -520,31 +549,29 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
         return _buildEmptyState();
       }
 
-      return RefreshIndicator(
-        onRefresh: _refreshExploration,
-        color: AppColors.primary,
-        child: ListView.builder(
-          controller: _scrollController,
-          padding: const EdgeInsets.all(16),
-          itemCount:
-              destinations.length + (state is ExplorationLoadingMore ? 1 : 0),
-          itemBuilder: (context, index) {
-            if (index == destinations.length) {
-              return const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: CircularProgressIndicator(),
-                ),
-              );
-            }
-
-            final destination = destinations[index];
-            return _buildDestinationCard(
-              context: context,
-              destination: destination,
+      return ListView.builder(
+        controller: _scrollController,
+        physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics()),
+        padding: const EdgeInsets.all(16),
+        itemCount:
+            destinations.length + (state is ExplorationLoadingMore ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index == destinations.length) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(8.0),
+                child: CircularProgressIndicator(),
+              ),
             );
-          },
-        ),
+          }
+
+          final destination = destinations[index];
+          return _buildDestinationCard(
+            context: context,
+            destination: destination,
+          );
+        },
       );
     } else if (state is ExplorationError) {
       return Center(
@@ -595,9 +622,7 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
         ),
       );
     } else {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const ExplorationScreenSkeleton();
     }
   }
 
@@ -661,11 +686,6 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
                         height: 180,
                         width: double.infinity,
                         fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          height: 180,
-                          width: double.infinity,
-                          color: Colors.grey.shade200,
-                        ),
                         errorWidget: (context, url, error) => Container(
                           height: 180,
                           width: double.infinity,
@@ -746,8 +766,7 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        destination['distance'] != null &&
-                                (destination['distance'] as num) > 0
+                        destination['distance'] != null
                             ? '${((destination['distance'] as num).toDouble()).toStringAsFixed(1)} km'
                             : 'Calculating...',
                         style: TextStyle(
@@ -776,11 +795,11 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
                       Icon(
                         Icons.star,
                         size: 14,
-                        color: Colors.amber.shade600,
+                        color: _getRatingIconColor(destination),
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        '${destination['rating']}',
+                        _getRatingText(destination),
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -925,23 +944,30 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
     }
   }
 
-  Future<void> _refreshExploration() async {
-    _explorationBloc.add(const LoadExplorationEvent());
-    // Create a completer that will be resolved when the refresh is complete
-    final completer = Completer<void>();
+  Color _getRatingIconColor(Map<String, dynamic> destination) {
+    final destinationType = destination['type'] as String? ?? 'added_by_google';
 
-    // Set up a listener to know when refresh is complete
-    late final StreamSubscription<ExplorationState> subscription;
-    subscription = _explorationBloc.stream.listen((state) {
-      if (state is ExplorationLoaded && !completer.isCompleted) {
-        completer.complete();
-        subscription.cancel();
-      } else if (state is ExplorationError && !completer.isCompleted) {
-        completer.completeError(state.message);
-        subscription.cancel();
-      }
-    });
+    // Use amber color for user-added destinations, primary color for Google destinations
+    if (destinationType == 'added_by_user') {
+      return Colors.amber.shade600;
+    } else {
+      return AppColors.primary;
+    }
+  }
 
-    return completer.future;
+  String _getRatingText(Map<String, dynamic> destination) {
+    final destinationType = destination['type'] as String? ?? 'added_by_google';
+
+    // For user-added destinations, show app rating if available
+    if (destinationType == 'added_by_user' &&
+        destination['app_rating_average'] != null) {
+      final appRating = destination['app_rating_average'] as double?;
+      return appRating != null ? appRating.toStringAsFixed(1) : '0.0';
+    }
+    // Otherwise show Google rating
+    else {
+      final rating = (destination['rating'] as num?)?.toDouble() ?? 0.0;
+      return rating.toStringAsFixed(1);
+    }
   }
 }

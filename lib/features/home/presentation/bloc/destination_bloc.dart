@@ -133,25 +133,24 @@ class DestinationBloc extends Bloc<DestinationEvent, DestinationState> {
   ) async {
     emit(DestinationLoading());
     try {
-      final destinations = await _destinationRepository.getDestinations();
-      final popularDestinations =
-          await _destinationRepository.getPopularDestinations();
-      final recommendedDestinations =
-          await _destinationRepository.getRecommendedDestinations();
+      // Use Future.wait to load all data in parallel instead of sequentially
+      final position = await _locationService.getCurrentPosition();
 
-      // Get user's current location for nearby destinations
-      Position? position = await _locationService.getCurrentPosition();
-      final nearbyDestinations =
-          await _destinationRepository.getNearbyDestinations(
-        latitude: position?.latitude,
-        longitude: position?.longitude,
-      );
+      final results = await Future.wait([
+        _destinationRepository.getDestinations(),
+        _destinationRepository.getPopularDestinations(),
+        _destinationRepository.getRecommendedDestinations(),
+        _destinationRepository.getNearbyDestinations(
+          latitude: position?.latitude,
+          longitude: position?.longitude,
+        ),
+      ]);
 
       emit(DestinationsLoaded(
-        destinations: destinations,
-        popularDestinations: popularDestinations,
-        recommendedDestinations: recommendedDestinations,
-        nearbyDestinations: nearbyDestinations,
+        destinations: results[0],
+        popularDestinations: results[1],
+        recommendedDestinations: results[2],
+        nearbyDestinations: results[3],
         favorites: {}, // Initialize with empty favorites map
       ));
     } catch (e) {

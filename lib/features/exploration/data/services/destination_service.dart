@@ -24,6 +24,26 @@ class DestinationService {
         response['rating'] = 0.0;
       }
 
+      // If this is a user-added destination, fetch user data
+      if (response['type'] == 'added_by_user' && response['added_by'] != null) {
+        try {
+          final userData = await _supabase
+              .from('user_profile')
+              .select('username, avatar_url')
+              .eq('user_id', response['added_by'])
+              .single();
+
+          // Add user profile data to the response
+          response['added_by_username'] = userData['username'];
+          response['added_by_avatar_url'] = userData['avatar_url'];
+        } catch (e) {
+          print('Error fetching user profile data: $e');
+          // Set defaults if user data cannot be fetched
+          response['added_by_username'] = 'user';
+          response['added_by_avatar_url'] = null;
+        }
+      }
+
       return response;
     } catch (e) {
       print('Error fetching destination: $e');

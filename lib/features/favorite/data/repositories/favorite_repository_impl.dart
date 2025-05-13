@@ -1,9 +1,12 @@
 import 'package:rivil/features/favorite/domain/model/favorite_destination.dart';
 import 'package:rivil/features/favorite/domain/repository/favorite_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:rivil/core/services/location_service.dart';
 
 class FavoriteRepositoryImpl implements FavoriteRepository {
   final SupabaseClient _client;
+  final LocationService _locationService = LocationService();
 
   FavoriteRepositoryImpl(this._client);
 
@@ -15,6 +18,22 @@ class FavoriteRepositoryImpl implements FavoriteRepository {
         return [];
       }
 
+      // Get user's current location
+      Position? userPosition;
+      try {
+        final hasPermission =
+            await _locationService.requestLocationPermission();
+        if (hasPermission) {
+          final serviceEnabled =
+              await _locationService.isLocationServiceEnabled();
+          if (serviceEnabled) {
+            userPosition = await _locationService.getCurrentPosition();
+          }
+        }
+      } catch (e) {
+        print('Error getting user location: $e');
+      }
+
       final response = await _client.from('favorite_destination').select('''
             id,
             destination_id,
@@ -24,6 +43,8 @@ class FavoriteRepositoryImpl implements FavoriteRepository {
               image_url, 
               address, 
               rating,
+              latitude,
+              longitude,
               category:category_id (
                 id, 
                 name
@@ -35,6 +56,28 @@ class FavoriteRepositoryImpl implements FavoriteRepository {
         final destination = item['destination'] as Map<String, dynamic>;
         final category = destination['category'] as Map<String, dynamic>;
 
+        // Calculate distance if we have user's location and destination coordinates
+        double distance = 0.0;
+        if (userPosition != null) {
+          final destLatStr = destination['latitude'] as String?;
+          final destLngStr = destination['longitude'] as String?;
+
+          if (destLatStr != null && destLngStr != null) {
+            final destLat = double.tryParse(destLatStr);
+            final destLng = double.tryParse(destLngStr);
+
+            if (destLat != null && destLng != null) {
+              distance = Geolocator.distanceBetween(
+                    userPosition.latitude,
+                    userPosition.longitude,
+                    destLat,
+                    destLng,
+                  ) /
+                  1000; // Convert to kilometers
+            }
+          }
+        }
+
         return FavoriteDestination(
           id: item['id'],
           destinationId: item['destination_id'],
@@ -43,6 +86,7 @@ class FavoriteRepositoryImpl implements FavoriteRepository {
           location: destination['address'] ?? '',
           category: category['name'] ?? '',
           rating: destination['rating']?.toDouble() ?? 0.0,
+          distance: distance,
         );
       }).toList();
     } catch (e) {

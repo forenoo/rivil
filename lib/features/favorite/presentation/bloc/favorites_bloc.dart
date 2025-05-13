@@ -16,6 +16,7 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
     on<RemoveFromFavorites>(_onRemoveFromFavorites);
     on<SearchFavorites>(_onSearchFavorites);
     on<CheckIsFavorite>(_onCheckIsFavorite);
+    on<UpdateFavoritesDistances>(_onUpdateFavoritesDistances);
   }
 
   Future<void> _onLoadFavorites(
@@ -102,5 +103,46 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
         destinationId: event.destinationId,
       ));
     }
+  }
+
+  Future<void> _onUpdateFavoritesDistances(
+    UpdateFavoritesDistances event,
+    Emitter<FavoritesState> emit,
+  ) async {
+    if (state is! FavoritesLoaded) return;
+
+    try {
+      // Get updated favorites with new distances without showing loading state
+      final updatedFavorites = await _repository.getFavoriteDestinations();
+      _allFavorites = updatedFavorites;
+
+      // Keep the current state but with updated distances
+      if (state is FavoritesLoaded) {
+        final currentState = state as FavoritesLoaded;
+        emit(FavoritesLoaded(
+          favorites: updatedFavorites,
+          filteredFavorites: currentState.filteredFavorites.isNotEmpty
+              ? _filterFavorites(
+                  currentState.filteredFavorites, updatedFavorites)
+              : updatedFavorites,
+        ));
+      }
+    } catch (e) {
+      // Don't emit error, just keep current state
+      print('Error updating distances: $e');
+    }
+  }
+
+  List<FavoriteDestination> _filterFavorites(
+    List<FavoriteDestination> currentFiltered,
+    List<FavoriteDestination> allUpdated,
+  ) {
+    // Get destination IDs from current filtered list
+    final filteredIds = currentFiltered.map((f) => f.destinationId).toSet();
+
+    // Return updated favorites that match the filtered IDs
+    return allUpdated
+        .where((f) => filteredIds.contains(f.destinationId))
+        .toList();
   }
 }

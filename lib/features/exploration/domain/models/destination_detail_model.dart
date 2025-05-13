@@ -19,6 +19,9 @@ class DestinationDetailModel {
   final Set<Marker> mapMarkers;
   final bool isFavorite;
   final DestinationType type;
+  final String? addedBy;
+  final String? addedByUsername;
+  final String? addedByAvatarUrl;
 
   DestinationDetailModel({
     required this.id,
@@ -38,6 +41,9 @@ class DestinationDetailModel {
     this.mapMarkers = const {},
     this.isFavorite = false,
     this.type = DestinationType.added_by_google,
+    this.addedBy,
+    this.addedByUsername,
+    this.addedByAvatarUrl,
   });
 
   // Create a model from a Map (typically from Supabase)
@@ -107,6 +113,9 @@ class DestinationDetailModel {
       mapMarkers: mapMarkers ?? {},
       isFavorite: isFavorite,
       type: destinationType,
+      addedBy: map['added_by'] as String?,
+      addedByUsername: map['added_by_username'] as String?,
+      addedByAvatarUrl: map['added_by_avatar_url'] as String?,
     );
   }
 
@@ -127,6 +136,9 @@ class DestinationDetailModel {
       'type': type == DestinationType.added_by_user
           ? 'added_by_user'
           : 'added_by_google',
+      'added_by': addedBy,
+      'added_by_username': addedByUsername,
+      'added_by_avatar_url': addedByAvatarUrl,
     };
   }
 
@@ -149,6 +161,9 @@ class DestinationDetailModel {
     Set<Marker>? mapMarkers,
     bool? isFavorite,
     DestinationType? type,
+    String? addedBy,
+    String? addedByUsername,
+    String? addedByAvatarUrl,
   }) {
     return DestinationDetailModel(
       id: id ?? this.id,
@@ -168,6 +183,9 @@ class DestinationDetailModel {
       mapMarkers: mapMarkers ?? this.mapMarkers,
       isFavorite: isFavorite ?? this.isFavorite,
       type: type ?? this.type,
+      addedBy: addedBy ?? this.addedBy,
+      addedByUsername: addedByUsername ?? this.addedByUsername,
+      addedByAvatarUrl: addedByAvatarUrl ?? this.addedByAvatarUrl,
     );
   }
 }

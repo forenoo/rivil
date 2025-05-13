@@ -554,6 +554,8 @@ class ExplorationBloc extends Bloc<ExplorationEvent, ExplorationState> {
     Emitter<ExplorationState> emit,
   ) {
     if (state is ExplorationLoaded) {
+      print(
+          'Processing UpdateDistancesEvent: lat=${event.latitude}, lng=${event.longitude}');
       final currentState = state as ExplorationLoaded;
 
       // Update user position
@@ -573,7 +575,6 @@ class ExplorationBloc extends Bloc<ExplorationEvent, ExplorationState> {
       // Recalculate distances for all destinations
       List<Map<String, dynamic>> updatedDestinations =
           currentState.destinations.map((destination) {
-        // Clone the destination
         final updatedDestination = Map<String, dynamic>.from(destination);
 
         // Extract destination coordinates
@@ -604,7 +605,13 @@ class ExplorationBloc extends Bloc<ExplorationEvent, ExplorationState> {
             destLat,
             destLng,
           );
-          updatedDestination['distance'] = distanceInMeters / 1000;
+          final distanceInKm = distanceInMeters / 1000;
+          print(
+              'Calculated distance for ${destination['name']}: $distanceInKm km');
+          updatedDestination['distance'] = distanceInKm;
+        } else {
+          print(
+              'Missing coordinates for ${destination['name']}: lat=$latValue, lng=$lngValue');
         }
 
         return updatedDestination;
@@ -615,10 +622,13 @@ class ExplorationBloc extends Bloc<ExplorationEvent, ExplorationState> {
         _sortDestinations(updatedDestinations, SortOption.distanceAsc);
       }
 
+      print('Emitting state with updated distances');
       // Emit updated state
       emit(currentState.copyWith(
         destinations: updatedDestinations,
       ));
+    } else {
+      print('Cannot update distances: state is not ExplorationLoaded');
     }
   }
 

@@ -656,12 +656,53 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          _destination.name,
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+        // Title row with destination name
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Text(
+                _destination.name,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
+            ),
+            if (_destination.type == DestinationType.added_by_user &&
+                _destination.addedByUsername != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4.0),
+                child: Row(
+                  children: [
+                    if (_destination.addedByAvatarUrl != null)
+                      CircleAvatar(
+                        radius: 12,
+                        backgroundImage:
+                            NetworkImage(_destination.addedByAvatarUrl!),
+                        backgroundColor: Colors.grey.shade200,
+                      )
+                    else
+                      CircleAvatar(
+                        radius: 12,
+                        backgroundColor: Colors.grey.shade300,
+                        child: const Icon(Icons.person,
+                            size: 14, color: Colors.white),
+                      ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '@${_destination.addedByUsername}',
+                      style: TextStyle(
+                        color: colorScheme.primary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
         ),
+
         const SizedBox(height: 8),
         Row(
           children: [

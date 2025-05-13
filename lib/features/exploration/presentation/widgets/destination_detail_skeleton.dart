@@ -64,6 +64,7 @@ class DestinationDetailSkeleton extends StatelessWidget {
       actions: [
         Container(
           margin: const EdgeInsets.only(right: 16, top: 16),
+          padding: const EdgeInsets.all(8),
           decoration: const BoxDecoration(
             color: Colors.white,
             shape: BoxShape.circle,

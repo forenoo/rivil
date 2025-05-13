@@ -13,6 +13,7 @@ class TripPlannerScreen extends StatefulWidget {
 class _TripPlannerScreenState extends State<TripPlannerScreen> {
   DateTime? startDate;
   DateTime? endDate;
+  Set<String> selectedPreferences = {};
 
   Future<void> _selectDate(BuildContext context, bool isStartDate) async {
     final DateTime? picked = await showDatePicker(
@@ -371,11 +372,19 @@ class _TripPlannerScreenState extends State<TripPlannerScreen> {
   Widget _buildPreferenceChip(
       BuildContext context, String label, IconData icon) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isSelected = false;
+    final isSelected = selectedPreferences.contains(label);
 
     return FilterChip(
       selected: isSelected,
-      onSelected: (value) {},
+      onSelected: (value) {
+        setState(() {
+          if (value) {
+            selectedPreferences.add(label);
+          } else {
+            selectedPreferences.remove(label);
+          }
+        });
+      },
       label: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
