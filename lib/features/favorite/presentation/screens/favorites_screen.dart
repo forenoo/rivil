@@ -447,6 +447,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       ThemeData theme, List<FavoriteDestination> items) {
     return GridView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      physics: const BouncingScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 1,
         childAspectRatio: 1.2,
@@ -638,21 +639,21 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                         ],
                       ),
 
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 6),
 
                       // Distance
                       Row(
                         children: [
                           Icon(
-                            Icons.directions,
+                            Icons.directions_walk,
                             size: 14,
-                            color: Colors.teal,
+                            color: AppColors.primary,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             '${destination.distance.toStringAsFixed(1)} km dari lokasi Anda',
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.grey.shade800,
+                              color: Colors.grey.shade600,
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
                             ),

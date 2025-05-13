@@ -9,6 +9,7 @@ import 'package:rivil/features/exploration/presentation/screens/destination_deta
 import 'package:rivil/features/home/presentation/bloc/destination_bloc.dart';
 import 'package:rivil/features/home/presentation/widgets/home_skeleton_loader.dart';
 import 'package:rivil/features/trip_planning/presentation/screens/trip_planner_screen.dart';
+import 'package:rivil/widgets/custom_snackbar.dart';
 import 'package:rivil/widgets/slide_page_route.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -28,11 +29,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
 
-    // Load all data in parallel instead of sequentially
-    Future.wait([
-      _initializeData(),
-      _requestLocationPermission(),
-    ]);
+    // Load all data and request permissions sequentially for better initial experience
+    _initializeData();
   }
 
   Future<void> _initializeData() async {
@@ -45,6 +43,9 @@ class _HomeScreenState extends State<HomeScreen> {
       _loadUserProfile(),
       _loadFavorites(),
     ]);
+
+    // After initial data is loaded, request location and update nearby destinations
+    _requestLocationPermission();
   }
 
   Future<void> _loadUserProfile() async {
@@ -90,18 +91,20 @@ class _HomeScreenState extends State<HomeScreen> {
     if (hasPermission) {
       Position? position = await _locationService.getCurrentPosition();
       if (position != null && mounted) {
-        // Only update nearby destinations if we already have loaded destinations
         if (context.read<DestinationBloc>().state is DestinationsLoaded) {
-          context.read<DestinationBloc>().add(LoadNearbyDestinations(
-                latitude: position.latitude,
-                longitude: position.longitude,
-              ));
+          context.read<DestinationBloc>().add(
+                LoadNearbyDestinations(
+                  latitude: position.latitude,
+                  longitude: position.longitude,
+                ),
+              );
+        } else {
+          context.read<DestinationBloc>().add(LoadDestinations());
         }
       }
     }
   }
 
-  // Method to check if a destination is favorited using BLoC state
   bool _isDestinationFavorited(int destinationId) {
     final state = context.read<DestinationBloc>().state;
     if (state is DestinationsLoaded) {
@@ -110,14 +113,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return false;
   }
 
-  // Method to toggle favorite status for a destination using BLoC
   Future<void> _toggleFavorite(int destinationId) async {
     final currentUser = Supabase.instance.client.auth.currentUser;
     if (currentUser == null) return;
 
     final isFavorited = _isDestinationFavorited(destinationId);
 
-    // Optimistically update the UI first
     context.read<DestinationBloc>().add(
           ToggleFavoriteEvent(
             destinationId: destinationId,
@@ -127,14 +128,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       if (isFavorited) {
-        // Delete the favorite entry
         await Supabase.instance.client
             .from('favorite_destination')
             .delete()
             .eq('user_id', currentUser.id)
             .eq('destination_id', destinationId);
       } else {
-        // Create a new favorite entry
         await Supabase.instance.client.from('favorite_destination').insert(
             {'user_id': currentUser.id, 'destination_id': destinationId});
       }
@@ -148,11 +147,10 @@ class _HomeScreenState extends State<HomeScreen> {
           );
 
       // Show error message if needed
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to update favorite status'),
-          backgroundColor: Colors.red,
-        ),
+      CustomSnackbar.show(
+        context: context,
+        message: 'Failed to update favorite status',
+        type: SnackbarType.error,
       );
     }
   }

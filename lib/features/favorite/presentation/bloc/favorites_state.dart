@@ -16,7 +16,7 @@ class FavoritesLoaded extends FavoritesState {
   final List<FavoriteDestination> favorites;
   final List<FavoriteDestination> filteredFavorites;
 
-  FavoritesLoaded({
+  const FavoritesLoaded({
     required this.favorites,
     List<FavoriteDestination>? filteredFavorites,
   }) : filteredFavorites = filteredFavorites ?? favorites;

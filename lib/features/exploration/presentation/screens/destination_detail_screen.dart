@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:rivil/core/config/app_colors.dart';
 import 'package:rivil/widgets/custom_snackbar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -505,7 +504,47 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
       return const DestinationDetailSkeleton();
     }
 
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Detail Destinasi',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 17,
+            letterSpacing: -0.5,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        shadowColor: Colors.transparent,
+        foregroundColor: colorScheme.primary,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          _isLoadingFavorite
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              : IconButton(
+                  icon: Icon(
+                    _isFavorite ? Icons.favorite : Icons.favorite_border,
+                    color: _isFavorite ? Colors.red : colorScheme.primary,
+                  ),
+                  onPressed: _toggleFavorite,
+                ),
+        ],
+      ),
       body: NotificationListener<ScrollNotification>(
         onNotification: (ScrollNotification notification) {
           if (notification.metrics.pixels >=
@@ -516,11 +555,60 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
           }
           return false;
         },
-        child: CustomScrollView(
-          slivers: [
-            _buildAppBar(context),
-            SliverToBoxAdapter(
-              child: Padding(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Hero image container
+              SizedBox(
+                width: double.infinity,
+                height: 220,
+                child: Stack(
+                  children: [
+                    // Hero image
+                    if (_isLoadingImage)
+                      Container(
+                        color: Colors.grey.shade300,
+                        child: const Center(
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    else
+                      SizedBox(
+                        width: double.infinity,
+                        height: double.infinity,
+                        child: Image.network(
+                          _destination.imageUrl ??
+                              'https://via.placeholder.com/400',
+                          width: double.infinity,
+                          height: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                            color: Colors.grey.shade300,
+                            child: const Icon(Icons.image,
+                                size: 50, color: Colors.grey),
+                          ),
+                        ),
+                      ),
+                    // Gradient overlay
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.5),
+                          ],
+                          stops: const [0.7, 1.0],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -540,113 +628,10 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
                   ],
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar(BuildContext context) {
-    return SliverAppBar(
-      expandedHeight: 220,
-      pinned: true,
-      collapsedHeight: 70,
-      backgroundColor: AppColors.primary,
-      flexibleSpace: FlexibleSpaceBar(
-        background: Stack(
-          children: [
-            // Hero image
-            if (_isLoadingImage)
-              Container(
-                color: Colors.grey.shade300,
-                child: const Center(
-                  child: CircularProgressIndicator(),
-                ),
-              )
-            else
-              SizedBox(
-                width: double.infinity,
-                height: double.infinity,
-                child: Image.network(
-                  _destination.imageUrl ?? 'https://via.placeholder.com/400',
-                  width: double.infinity,
-                  height: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: Colors.grey.shade300,
-                    child:
-                        const Icon(Icons.image, size: 50, color: Colors.grey),
-                  ),
-                ),
-              ),
-            // Gradient overlay
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withOpacity(0.5),
-                  ],
-                  stops: const [0.7, 1.0],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      leading: Container(
-        margin: const EdgeInsets.only(left: 16, top: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      actions: [
-        Container(
-          margin: const EdgeInsets.only(right: 16, top: 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
             ],
           ),
-          child: _isLoadingFavorite
-              ? const Padding(
-                  padding: EdgeInsets.all(12),
-                  child: SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                )
-              : IconButton(
-                  icon: Icon(
-                    _isFavorite ? Icons.favorite : Icons.favorite_border,
-                    color: _isFavorite ? Colors.red : Colors.black87,
-                  ),
-                  onPressed: _toggleFavorite,
-                ),
         ),
-      ],
+      ),
     );
   }
 
@@ -993,7 +978,7 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
                             'comment': comment.comment,
                           },
                         );
-                      }).toList(),
+                      }),
 
                       // Loading indicator
                       if (_hasMoreComments)

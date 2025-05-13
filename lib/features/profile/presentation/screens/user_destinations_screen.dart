@@ -118,7 +118,7 @@ class _UserDestinationsScreenState extends State<UserDestinationsScreen> {
 
       if (mounted) {
         setState(() {
-          _destinations = destinations as List<DestinationDetailModel>;
+          _destinations = destinations;
           _isLoading = false;
         });
       }
@@ -256,20 +256,17 @@ class _UserDestinationsScreenState extends State<UserDestinationsScreen> {
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: _fetchUserDestinations,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _destinations.length,
-        physics: const BouncingScrollPhysics(),
-        itemBuilder: (context, index) {
-          final destination = _destinations[index];
-          return _buildDestinationCard(
-            context: context,
-            destination: destination,
-          );
-        },
-      ),
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _destinations.length,
+      physics: const BouncingScrollPhysics(),
+      itemBuilder: (context, index) {
+        final destination = _destinations[index];
+        return _buildDestinationCard(
+          context: context,
+          destination: destination,
+        );
+      },
     );
   }
 
@@ -315,13 +312,7 @@ class _UserDestinationsScreenState extends State<UserDestinationsScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: Colors.grey.shade200),
       ),
       child: Material(
         color: Colors.transparent,

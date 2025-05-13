@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rivil/core/config/app_colors.dart';
+import 'package:rivil/features/trip_planning/domain/models/trip_request.dart';
+import 'package:rivil/features/trip_planning/presentation/bloc/trip_planning_bloc.dart';
 import 'package:rivil/features/trip_planning/presentation/screens/trip_results_screen.dart';
+import 'package:rivil/features/home/domain/utils/category_icon_mapper.dart';
+import 'package:rivil/widgets/custom_snackbar.dart';
 import 'package:rivil/widgets/slide_page_route.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class TripPlannerScreen extends StatefulWidget {
   const TripPlannerScreen({super.key});
@@ -11,9 +17,62 @@ class TripPlannerScreen extends StatefulWidget {
 }
 
 class _TripPlannerScreenState extends State<TripPlannerScreen> {
+  final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _budgetController = TextEditingController();
+  final TextEditingController _peopleController = TextEditingController();
+
   DateTime? startDate;
   DateTime? endDate;
   Set<String> selectedPreferences = {};
+  List<String> _categories = [];
+  bool _isLoadingCategories = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories();
+  }
+
+  Future<void> _loadCategories() async {
+    setState(() {
+      _isLoadingCategories = true;
+    });
+
+    try {
+      final response = await Supabase.instance.client
+          .from('category')
+          .select('name')
+          .order('name', ascending: true);
+
+      if (mounted) {
+        setState(() {
+          _categories = response
+              .map<String>((category) => category['name'] as String)
+              .toList();
+          _isLoadingCategories = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingCategories = false;
+        });
+        CustomSnackbar.show(
+          context: context,
+          message: 'Failed to load categories: $e',
+          type: SnackbarType.error,
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _descriptionController.dispose();
+    _budgetController.dispose();
+    _peopleController.dispose();
+    super.dispose();
+  }
 
   Future<void> _selectDate(BuildContext context, bool isStartDate) async {
     final DateTime? picked = await showDatePicker(
@@ -177,6 +236,7 @@ class _TripPlannerScreenState extends State<TripPlannerScreen> {
                       ),
                     ),
                     child: TextField(
+                      controller: _descriptionController,
                       maxLines: 4,
                       decoration: InputDecoration(
                         hintText:
@@ -224,6 +284,7 @@ class _TripPlannerScreenState extends State<TripPlannerScreen> {
                     label: 'Budget',
                     hint: 'Masukkan budget perjalananmu',
                     icon: Icons.wallet,
+                    controller: _budgetController,
                   ),
 
                   const SizedBox(height: 16),
@@ -234,6 +295,7 @@ class _TripPlannerScreenState extends State<TripPlannerScreen> {
                     label: 'Jumlah Orang',
                     hint: 'Masukkan jumlah peserta',
                     icon: Icons.people,
+                    controller: _peopleController,
                   ),
 
                   const SizedBox(height: 24),
@@ -248,24 +310,22 @@ class _TripPlannerScreenState extends State<TripPlannerScreen> {
                   const SizedBox(height: 16),
 
                   // Preference Chips
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _buildPreferenceChip(
-                          context, 'Pantai', Icons.beach_access),
-                      _buildPreferenceChip(context, 'Gunung', Icons.landscape),
-                      _buildPreferenceChip(
-                          context, 'Kota', Icons.location_city),
-                      _buildPreferenceChip(
-                          context, 'Kuliner', Icons.restaurant),
-                      _buildPreferenceChip(
-                          context, 'Sejarah', Icons.history_edu),
-                      _buildPreferenceChip(context, 'Alam', Icons.park),
-                      _buildPreferenceChip(context, 'Adventure', Icons.hiking),
-                      _buildPreferenceChip(context, 'Relaksasi', Icons.spa),
-                    ],
-                  ),
+                  _isLoadingCategories
+                      ? Center(
+                          child: CircularProgressIndicator(
+                            color: colorScheme.primary,
+                          ),
+                        )
+                      : Wrap(
+                          spacing: 4,
+                          runSpacing: 0,
+                          children: _categories.map((category) {
+                            final icon =
+                                CategoryIconMapper.getIconForCategory(category);
+                            return _buildPreferenceChip(
+                                context, category, icon);
+                          }).toList(),
+                        ),
 
                   const SizedBox(height: 32),
 
@@ -274,6 +334,35 @@ class _TripPlannerScreenState extends State<TripPlannerScreen> {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
+                        if (_descriptionController.text.isEmpty) {
+                          CustomSnackbar.show(
+                            context: context,
+                            message: 'Silakan isi deskripsi perjalanan kamu',
+                            type: SnackbarType.error,
+                          );
+                          return;
+                        }
+
+                        // Create trip request
+                        final request = TripRequest(
+                          description: _descriptionController.text,
+                          startDate: startDate,
+                          endDate: endDate,
+                          budget: _budgetController.text.isEmpty
+                              ? null
+                              : _budgetController.text,
+                          numberOfPeople: _peopleController.text.isEmpty
+                              ? null
+                              : _peopleController.text,
+                          preferences: selectedPreferences.toList(),
+                        );
+
+                        // Add event to BLoC
+                        context
+                            .read<TripPlanningBloc>()
+                            .add(GenerateTripPlanEvent(request));
+
+                        // Navigate to results screen
                         Navigator.push(
                           context,
                           SlidePageRoute(
@@ -325,6 +414,7 @@ class _TripPlannerScreenState extends State<TripPlannerScreen> {
     required String label,
     required String hint,
     required IconData icon,
+    required TextEditingController controller,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -348,6 +438,7 @@ class _TripPlannerScreenState extends State<TripPlannerScreen> {
             ),
           ),
           child: TextField(
+            controller: controller,
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: TextStyle(

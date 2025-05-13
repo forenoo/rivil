@@ -28,12 +28,17 @@ dependencies:
   cached_network_image: ^3.4.1
   shimmer: ^3.0.0
   flutter_svg: ^2.1.0
+  lottie: ^3.3.1
 
   # Location
   geolocator: ^14.0.0
   permission_handler: ^12.0.0+1
   google_maps_flutter: ^2.12.1
   url_launcher: ^6.3.1
+
+  # Artificial Intelligence
+  google_generative_ai: ^0.4.7
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:
@@ -45,8 +50,10 @@ flutter:
   uses-material-design: true
 
   assets:
+    - assets/
     - assets/fonts/
     - assets/images/
+    - assets/images/destinations/
     - assets/vectors/
     - .env
 

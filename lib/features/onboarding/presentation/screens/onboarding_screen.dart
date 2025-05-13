@@ -30,7 +30,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     },
     {
       'image': 'assets/images/onboarding-easy.png',
-      'title': 'Rencanakan dengan Mudah',
+      'title': 'Rencanakan Dengan Mudah',
       'description':
           'Dapatkan informasi lengkap tentang harga tiket, jam buka, fasilitas, dan ulasan dari pengunjung lain untuk merencanakan kunjunganmu.',
     },

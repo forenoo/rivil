@@ -26,7 +26,6 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
   // Filter values
   double _minRating = 0;
   String? _selectedCategory;
-  SortOption? _selectedSortOption;
 
   @override
   void initState() {
@@ -214,7 +213,6 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
                             setState(() {
                               _minRating = 0;
                               _selectedCategory = null;
-                              _selectedSortOption = null;
                             });
                           },
                           child: Text(
@@ -234,35 +232,6 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
                     child: ListView(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       children: [
-                        // Sort options
-                        const Text(
-                          'Urutkan Berdasarkan',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 8,
-                          children: [
-                            _buildSortChip(
-                              context,
-                              setState,
-                              "Rating Tertinggi",
-                              SortOption.ratingDesc,
-                            ),
-                            _buildSortChip(
-                              context,
-                              setState,
-                              "Jarak Terdekat",
-                              SortOption.distanceAsc,
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 20),
-
                         // Category filter
                         const Text(
                           'Kategori',
@@ -398,13 +367,6 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
                           ),
                         );
 
-                        // Apply sorting if selected
-                        if (_selectedSortOption != null) {
-                          explorationBloc.add(
-                            SortDestinationsEvent(_selectedSortOption!),
-                          );
-                        }
-
                         Navigator.pop(context);
                       },
                       style: ElevatedButton.styleFrom(
@@ -430,35 +392,6 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
           });
         },
       ),
-    );
-  }
-
-  Widget _buildSortChip(
-    BuildContext context,
-    StateSetter setState,
-    String label,
-    SortOption option,
-  ) {
-    final isSelected = _selectedSortOption == option;
-
-    return FilterChip(
-      label: Text(label),
-      selected: isSelected,
-      side: BorderSide(
-        color: isSelected ? AppColors.primary : Colors.grey.shade400,
-      ),
-      backgroundColor: Colors.grey.shade50,
-      selectedColor: AppColors.jordyBlue200,
-      checkmarkColor: AppColors.primary,
-      labelStyle: TextStyle(
-        color: isSelected ? AppColors.primary : Colors.grey.shade800,
-        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-      ),
-      onSelected: (selected) {
-        setState(() {
-          _selectedSortOption = selected ? option : null;
-        });
-      },
     );
   }
 

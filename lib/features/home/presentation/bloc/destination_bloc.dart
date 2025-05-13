@@ -196,28 +196,35 @@ class DestinationBloc extends Bloc<DestinationEvent, DestinationState> {
     LoadNearbyDestinations event,
     Emitter<DestinationState> emit,
   ) async {
-    if (state is DestinationsLoaded) {
-      try {
-        double? latitude = event.latitude;
-        double? longitude = event.longitude;
+    try {
+      double? latitude = event.latitude;
+      double? longitude = event.longitude;
 
-        // If location not provided, try to get current location
-        if (latitude == null || longitude == null) {
-          Position? position = await _locationService.getCurrentPosition();
-          latitude = position?.latitude;
-          longitude = position?.longitude;
-        }
+      // If location not provided, try to get current location
+      if (latitude == null || longitude == null) {
+        Position? position = await _locationService.getCurrentPosition();
+        latitude = position?.latitude;
+        longitude = position?.longitude;
+      }
 
-        final nearbyDestinations =
-            await _destinationRepository.getNearbyDestinations(
-          latitude: latitude,
-          longitude: longitude,
-        );
+      final nearbyDestinations =
+          await _destinationRepository.getNearbyDestinations(
+        latitude: latitude,
+        longitude: longitude,
+      );
 
+      if (state is DestinationsLoaded) {
+        // Update the existing state with new nearby destinations
         emit((state as DestinationsLoaded).copyWith(
           nearbyDestinations: nearbyDestinations,
         ));
-      } catch (e) {
+      } else if (state is DestinationLoading) {
+        // We're still loading other data, but we'll let that complete
+        // The LoadDestinations handler will incorporate our results
+      }
+    } catch (e) {
+      // Only emit error if we're in the loaded state
+      if (state is DestinationsLoaded) {
         emit(DestinationError(e.toString()));
       }
     }

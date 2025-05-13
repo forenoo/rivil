@@ -44,8 +44,8 @@ class HomeSkeletonLoader extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
+            Colors.grey.shade300,
             Colors.grey.shade400,
-            Colors.grey.shade500,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,

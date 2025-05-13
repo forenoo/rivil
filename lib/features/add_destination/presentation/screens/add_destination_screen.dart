@@ -30,7 +30,7 @@ class _AddDestinationScreenState extends State<AddDestinationScreen> {
   final _longitudeController = TextEditingController();
   final _gmapsLinkController = TextEditingController();
   int? _selectedCategoryId;
-  double _rating = 0.0;
+  final double _rating = 0.0;
 
   @override
   void dispose() {

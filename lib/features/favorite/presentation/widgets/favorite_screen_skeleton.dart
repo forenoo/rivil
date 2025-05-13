@@ -49,7 +49,7 @@ class FavoriteScreenSkeleton extends StatelessWidget {
                 height: 180,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: Colors.grey.shade300,
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(16),
                     topRight: Radius.circular(16),

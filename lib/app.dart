@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rivil/core/config/app_colors.dart';
 import 'package:rivil/core/config/app_theme.dart';
 import 'package:rivil/core/services/supabase_service.dart';
 import 'package:rivil/features/auth/data/repositories/auth_repository_impl.dart';
@@ -24,7 +25,12 @@ import 'package:rivil/features/exploration/data/repositories/exploration_reposit
 import 'package:rivil/features/exploration/domain/repositories/exploration_repository.dart';
 import 'package:rivil/features/exploration/presentation/bloc/exploration_bloc.dart';
 import 'package:rivil/features/add_destination/presentation/screens/add_destination_screen.dart';
+import 'package:rivil/features/trip_planning/data/services/trip_planning_service.dart';
+import 'package:rivil/features/trip_planning/presentation/bloc/trip_planning_bloc.dart';
 import 'package:rivil/widgets/slide_page_route.dart';
+import 'package:rivil/features/trip_planning/domain/repositories/trip_repository.dart';
+import 'package:rivil/features/trip_planning/data/repositories/trip_repository_impl.dart';
+import 'package:rivil/features/trip_planning/presentation/bloc/trip_save_bloc.dart';
 
 final GlobalKey<_MainNavigationWrapperState> mainNavigationKey =
     GlobalKey<_MainNavigationWrapperState>();
@@ -37,6 +43,7 @@ class RivilApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final onboardingService = OnboardingService();
+    final tripPlanningService = TripPlanningService();
 
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
@@ -71,6 +78,12 @@ class RivilApp extends StatelessWidget {
           create: (context) =>
               ExplorationRepositoryImpl(supabaseService.client),
         ),
+        RepositoryProvider<TripPlanningService>(
+          create: (context) => tripPlanningService,
+        ),
+        RepositoryProvider<TripRepository>(
+          create: (context) => TripRepositoryImpl(supabaseService.client),
+        ),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -89,6 +102,16 @@ class RivilApp extends StatelessWidget {
           BlocProvider<ExplorationBloc>(
             create: (context) => ExplorationBloc(
               context.read<ExplorationRepository>(),
+            ),
+          ),
+          BlocProvider<TripPlanningBloc>(
+            create: (context) => TripPlanningBloc(
+              context.read<TripPlanningService>(),
+            ),
+          ),
+          BlocProvider<TripSaveBloc>(
+            create: (context) => TripSaveBloc(
+              context.read<TripRepository>(),
             ),
           ),
         ],
@@ -145,8 +168,6 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Scaffold(
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
@@ -199,15 +220,15 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
                   width: 50,
                   margin: const EdgeInsets.symmetric(horizontal: 8),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        colorScheme.primary,
-                        colorScheme.primary.withBlue(200)
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    color: AppColors.primary,
                     borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.6),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: InkWell(
                     onTap: () {

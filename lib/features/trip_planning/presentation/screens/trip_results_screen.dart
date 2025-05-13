@@ -1,4 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lottie/lottie.dart';
+import 'package:rivil/features/trip_planning/domain/models/trip_plan.dart';
+import 'package:rivil/features/trip_planning/presentation/bloc/trip_planning_bloc.dart';
+import 'package:rivil/features/trip_planning/presentation/bloc/trip_save_bloc.dart';
+import 'package:rivil/widgets/custom_snackbar.dart';
 
 class TripResultsScreen extends StatelessWidget {
   const TripResultsScreen({super.key});
@@ -8,298 +14,344 @@ class TripResultsScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Hasil Rencana Perjalanan',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 17,
-            letterSpacing: -0.5,
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        shadowColor: Colors.transparent,
-        foregroundColor: colorScheme.primary,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, size: 20),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
-      body: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(
-          parent: BouncingScrollPhysics(),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Trip Summary Header
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    colorScheme.primary.withOpacity(0.8),
-                    colorScheme.primary,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
+    return BlocBuilder<TripPlanningBloc, TripPlanningState>(
+      builder: (context, state) {
+        if (state is TripPlanningLoading) {
+          // Loading state - no AppBar
+          return Scaffold(
+            body: Center(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  SizedBox(
+                    width: 250,
+                    height: 250,
+                    child: Lottie.asset(
+                      'assets/loadingearth.json',
+                    ),
+                  ),
+                  const SizedBox(height: 20),
                   Text(
-                    'Liburan Pantai di Bali',
+                    'Membuat Rencana Perjalanan...',
                     style: theme.textTheme.titleMedium?.copyWith(
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.calendar_month,
-                        color: Colors.white.withOpacity(0.9),
-                        size: 16,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '20-23 Agustus 2023 • 3 hari',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.white.withOpacity(0.9),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.people_outline,
-                        color: Colors.white.withOpacity(0.9),
-                        size: 16,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '2 orang',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.white.withOpacity(0.9),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Icon(
-                        Icons.wallet,
-                        color: Colors.white.withOpacity(0.9),
-                        size: 16,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Rp 5.000.000',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.white.withOpacity(0.9),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _buildTag(context, 'Pantai'),
-                      _buildTag(context, 'Relaksasi'),
-                      _buildTag(context, 'Kuliner'),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Trip Overview
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.auto_awesome,
-                        color: colorScheme.primary,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Ringkasan Perjalanan',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.grey.shade200,
-                        width: 1,
-                      ),
-                    ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
                     child: Text(
-                      'Nikmati liburan 3 hari di Bali dengan fokus pada pantai-pantai indah di selatan pulau. Perjalanan ini mencakup kunjungan ke Pantai Kuta, Uluwatu, dan Jimbaran untuk menikmati sunset. Termasuk juga pengalaman kuliner khas Bali dan waktu relaksasi di resort.',
+                      'Sedang disiapkan, AI tengah merancang perjalanan terbaik yang pas untukmu.',
+                      textAlign: TextAlign.center,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey.shade800,
-                        height: 1.5,
+                        color: Colors.grey.shade700,
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+          );
+        }
 
-            // Daily Itinerary
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.view_timeline_outlined,
-                        color: colorScheme.primary,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Jadwal Perjalanan',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Day 1
-                  _buildDayItinerary(
-                    context: context,
-                    day: 'Hari 1 • 20 Agustus',
-                    activities: [
-                      {
-                        'time': '08:00',
-                        'title': 'Check-in di Resort',
-                        'description':
-                            'Tiba di resort dan beristirahat sejenak',
-                        'location': 'Kuta Beach Resort'
-                      },
-                      {
-                        'time': '12:00',
-                        'title': 'Makan Siang',
-                        'description': 'Mencoba hidangan seafood khas Bali',
-                        'location': 'Pantai Jimbaran'
-                      },
-                      {
-                        'time': '15:00',
-                        'title': 'Pantai Kuta',
-                        'description': 'Berjemur dan berenang di pantai',
-                        'location': 'Pantai Kuta'
-                      },
-                      {
-                        'time': '18:00',
-                        'title': 'Makan Malam',
-                        'description': 'Menikmati sunset dinner',
-                        'location': 'Beachfront Restaurant'
-                      },
-                    ],
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Day 2
-                  _buildDayItinerary(
-                    context: context,
-                    day: 'Hari 2 • 21 Agustus',
-                    activities: [
-                      {
-                        'time': '09:00',
-                        'title': 'Sarapan',
-                        'description': 'Sarapan di resort',
-                        'location': 'Resort Restaurant'
-                      },
-                      {
-                        'time': '11:00',
-                        'title': 'Kuil Uluwatu',
-                        'description': 'Mengunjungi kuil di tebing',
-                        'location': 'Pura Uluwatu'
-                      },
-                      {
-                        'time': '15:00',
-                        'title': 'Pantai Padang Padang',
-                        'description': 'Berenang dan snorkeling',
-                        'location': 'Padang Padang Beach'
-                      },
-                      {
-                        'time': '19:00',
-                        'title': 'Tari Kecak',
-                        'description': 'Menonton pertunjukan budaya',
-                        'location': 'Uluwatu Temple'
-                      },
-                    ],
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Day 3
-                  _buildDayItinerary(
-                    context: context,
-                    day: 'Hari 3 • 22 Agustus',
-                    activities: [
-                      {
-                        'time': '09:00',
-                        'title': 'Sarapan',
-                        'description': 'Sarapan di resort',
-                        'location': 'Resort Restaurant'
-                      },
-                      {
-                        'time': '10:30',
-                        'title': 'Spa & Wellness',
-                        'description': 'Menikmati pijat tradisional Bali',
-                        'location': 'Resort Spa'
-                      },
-                      {
-                        'time': '14:00',
-                        'title': 'Pantai Nusa Dua',
-                        'description': 'Aktivitas air dan berjemur',
-                        'location': 'Nusa Dua Beach'
-                      },
-                      {
-                        'time': '18:00',
-                        'title': 'Makan Malam Perpisahan',
-                        'description': 'Menikmati hidangan khas Bali',
-                        'location': 'Warung Makan Tradisional'
-                      },
-                    ],
-                  ),
-                ],
+        // For all other states, show AppBar
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text(
+              'Hasil Rencana Perjalanan',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 17,
+                letterSpacing: -0.5,
               ),
             ),
-            const SizedBox(height: 24),
+            centerTitle: true,
+            backgroundColor: Colors.white,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            shadowColor: Colors.transparent,
+            foregroundColor: colorScheme.primary,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios, size: 20),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ),
+          body: _buildBodyContent(context, state),
+        );
+      },
+    );
+  }
 
-            // Destination Highlights
+  Widget _buildBodyContent(BuildContext context, TripPlanningState state) {
+    final theme = Theme.of(context);
+
+    if (state is TripPlanningFailure) {
+      // Error state
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline_rounded,
+                size: 64,
+                color: Colors.red.shade400,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Gagal membuat rencana perjalanan',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Error: ${state.error}',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: Colors.grey.shade700,
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Kembali dan coba lagi'),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else if (state is TripPlanningSuccess) {
+      // Success state - show trip plan
+      final tripPlan = state.tripPlan;
+      return _buildTripPlanContent(context, tripPlan);
+    } else {
+      // Initial state or unexpected state
+      return const Center(
+        child: Text('Mulai buat rencana perjalanan kamu'),
+      );
+    }
+  }
+
+  Widget _buildTripPlanContent(BuildContext context, TripPlan tripPlan) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    // Format dates
+    String dateRange = 'Fleksibel';
+    String dayCount = '${tripPlan.numberOfDays} hari';
+
+    if (tripPlan.startDate != null && tripPlan.endDate != null) {
+      dateRange =
+          '${_formatDate(tripPlan.startDate!)}-${_formatDate(tripPlan.endDate!)}';
+    }
+
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Trip Summary Header
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  colorScheme.primary.withOpacity(0.8),
+                  colorScheme.primary,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  tripPlan.title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_month,
+                      color: Colors.white.withOpacity(0.9),
+                      size: 16,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '$dateRange • $dayCount',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.white.withOpacity(0.9),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.people_outline,
+                      color: Colors.white.withOpacity(0.9),
+                      size: 16,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      tripPlan.numberOfPeople ?? 'Fleksibel',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.white.withOpacity(0.9),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Icon(
+                      Icons.wallet,
+                      color: Colors.white.withOpacity(0.9),
+                      size: 16,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      tripPlan.budget ?? 'Fleksibel',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.white.withOpacity(0.9),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: tripPlan.preferences
+                      .map((pref) => _buildTag(context, pref))
+                      .toList(),
+                ),
+              ],
+            ),
+          ),
+
+          // Trip Overview
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.auto_awesome,
+                      color: colorScheme.primary,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Ringkasan Perjalanan',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.grey.shade200,
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    tripPlan.summary,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: Colors.grey.shade800,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Daily Itinerary
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.view_timeline_outlined,
+                      color: colorScheme.primary,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Jadwal Perjalanan',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Days
+                ...tripPlan.days.map((day) {
+                  final formattedDate =
+                      day.date != null ? _formatDate(day.date!) : '';
+
+                  final dayTitle = formattedDate.isNotEmpty
+                      ? '${day.day} • $formattedDate'
+                      : day.day;
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 24),
+                    child: _buildDayItinerary(
+                      context: context,
+                      day: dayTitle,
+                      activities: day.activities
+                          .map((activity) => {
+                                'time': activity.time,
+                                'title': activity.title,
+                                'description': activity.description,
+                                'location': activity.location,
+                              })
+                          .toList(),
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+
+          // Destination Highlights
+          if (tripPlan.highlights.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
@@ -324,49 +376,30 @@ class TripResultsScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      Text(
-                        'Lihat peta',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colorScheme.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
                   SizedBox(
-                    height: 200,
+                    height: 250,
                     child: ListView(
                       scrollDirection: Axis.horizontal,
-                      children: [
-                        _buildDestinationCard(
+                      children: tripPlan.highlights.map((highlight) {
+                        return _buildDestinationCard(
                           context: context,
-                          name: 'Pantai Kuta',
-                          imageUrl: 'assets/images/destinations/kuta.jpg',
-                          rating: 4.7,
-                        ),
-                        _buildDestinationCard(
-                          context: context,
-                          name: 'Kuil Uluwatu',
-                          imageUrl: 'assets/images/destinations/uluwatu.jpg',
-                          rating: 4.8,
-                        ),
-                        _buildDestinationCard(
-                          context: context,
-                          name: 'Pantai Jimbaran',
-                          imageUrl: 'assets/images/destinations/jimbaran.jpg',
-                          rating: 4.6,
-                        ),
-                      ],
+                          name: highlight.name,
+                          description: highlight.description,
+                          imageUrl: highlight.imageUrl,
+                          rating: highlight.rating,
+                        );
+                      }).toList(),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-
-            // Recommendations
+          const SizedBox(height: 24),
+          // Recommendations
+          if (tripPlan.recommendations.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
@@ -389,101 +422,120 @@ class TripResultsScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  _buildRecommendationItem(
-                    context: context,
-                    icon: Icons.beach_access,
-                    title: 'Bawa perlengkapan pantai',
-                    description:
-                        'Sunscreen, topi, dan kacamata hitam sangat direkomendasikan',
-                  ),
-                  const SizedBox(height: 12),
-                  _buildRecommendationItem(
-                    context: context,
-                    icon: Icons.attach_money_outlined,
-                    title: 'Siapkan uang tunai',
-                    description:
-                        'Beberapa tempat tidak menerima pembayaran kartu',
-                  ),
-                  const SizedBox(height: 12),
-                  _buildRecommendationItem(
-                    context: context,
-                    icon: Icons.language,
-                    title: 'Frasa Bahasa Bali',
-                    description:
-                        'Belajar beberapa frasa dasar untuk berinteraksi dengan penduduk lokal',
-                  ),
+                  ...tripPlan.recommendations.map((recommendation) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _buildRecommendationItem(
+                        context: context,
+                        icon: recommendation.icon,
+                        title: recommendation.title,
+                        description: recommendation.description,
+                      ),
+                    );
+                  }),
                 ],
               ),
             ),
-            const SizedBox(height: 32),
+          const SizedBox(height: 32),
 
-            // Save Trip & Edit Buttons
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {},
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: colorScheme.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        'Simpan Perjalanan',
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {},
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 16, horizontal: 20),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(color: colorScheme.primary),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.refresh,
-                            size: 18,
-                            color: colorScheme.primary,
+          // Save Trip & Edit Buttons
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              children: [
+                BlocBuilder<TripSaveBloc, TripSaveState>(
+                  builder: (context, state) {
+                    final isLoading = state is TripSaveLoading;
+                    final isSaved = state is TripSaveSuccess;
+                    return BlocListener<TripSaveBloc, TripSaveState>(
+                      listener: (context, state) {
+                        if (state is TripSaveSuccess) {
+                          CustomSnackbar.show(
+                            context: context,
+                            message: 'Perjalanan berhasil disimpan',
+                            type: SnackbarType.success,
+                          );
+                        } else if (state is TripSaveFailure) {
+                          CustomSnackbar.show(
+                            context: context,
+                            message:
+                                'Gagal menyimpan perjalanan: ${state.error}',
+                            type: SnackbarType.error,
+                          );
+                        }
+                      },
+                      child: ElevatedButton(
+                        onPressed: isLoading || isSaved
+                            ? null
+                            : () {
+                                context
+                                    .read<TripSaveBloc>()
+                                    .add(SaveTripEvent(tripPlan));
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: colorScheme.primary,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Buat Ulang',
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              color: colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
+                          elevation: 0,
+                          minimumSize: const Size(double.infinity, 56),
+                          disabledBackgroundColor:
+                              colorScheme.primary.withOpacity(0.7),
+                        ),
+                        child: isLoading
+                            ? Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Text(
+                                isSaved
+                                    ? 'Perjalanan Tersimpan'
+                                    : 'Simpan Perjalanan',
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                       ),
-                    ),
-                  ),
-                ],
-              ),
+                    );
+                  },
+                ),
+              ],
             ),
-            const SizedBox(height: 32),
-          ],
-        ),
+          ),
+          const SizedBox(height: 32),
+        ],
       ),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    final List<String> indonesianMonths = [
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember'
+    ];
+
+    return '${date.day} ${indonesianMonths[date.month - 1]} ${date.year}';
   }
 
   Widget _buildTag(BuildContext context, String label) {
@@ -596,11 +648,15 @@ class TripResultsScreen extends StatelessWidget {
                             color: colorScheme.primary,
                           ),
                           const SizedBox(width: 4),
-                          Text(
-                            activity['location'] ?? '',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colorScheme.primary,
-                              fontWeight: FontWeight.w500,
+                          Expanded(
+                            child: Text(
+                              activity['location'] ?? '',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -611,7 +667,7 @@ class TripResultsScreen extends StatelessWidget {
               ],
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -619,13 +675,19 @@ class TripResultsScreen extends StatelessWidget {
   Widget _buildDestinationCard({
     required BuildContext context,
     required String name,
+    required String description,
     required String imageUrl,
     required double rating,
   }) {
     final theme = Theme.of(context);
 
+    // Limit description to just one sentence (ending at the first period)
+    final shortDescription = description.contains('.')
+        ? "${description.split('.').first}."
+        : description;
+
     return Container(
-      width: 160,
+      width: 200,
       margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -638,23 +700,13 @@ class TripResultsScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Image
+          // Image with proper handling
           ClipRRect(
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(12),
               topRight: Radius.circular(12),
             ),
-            child: Image.asset(
-              imageUrl,
-              height: 120,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                height: 120,
-                color: Colors.grey.shade300,
-                child: const Icon(Icons.image, color: Colors.grey),
-              ),
-            ),
+            child: _buildDestinationImage(imageUrl),
           ),
           Padding(
             padding: const EdgeInsets.all(12),
@@ -667,6 +719,15 @@ class TripResultsScreen extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                   maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  shortDescription,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: Colors.grey.shade600,
+                  ),
+                  maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
@@ -691,6 +752,43 @@ class TripResultsScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  // Display destination image from static assets with improved error handling
+  Widget _buildDestinationImage(String imageUrl) {
+    return Image.asset(
+      imageUrl,
+      height: 120,
+      width: double.infinity,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        // Log the error for debugging
+        print('Error loading image $imageUrl: $error');
+        return Container(
+          height: 120,
+          width: double.infinity,
+          color: Colors.grey.shade200,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.image_not_supported_outlined,
+                color: Colors.grey.shade500,
+                size: 32,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Gambar tidak tersedia',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

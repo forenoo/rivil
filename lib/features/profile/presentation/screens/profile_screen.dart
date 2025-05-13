@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rivil/features/auth/data/models/user_profile_model.dart';
 import 'package:rivil/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:rivil/features/profile/presentation/screens/personal_info_screen.dart';
+import 'package:rivil/features/profile/presentation/screens/saved_trips_screen.dart';
 import 'package:rivil/features/profile/presentation/screens/user_destinations_screen.dart';
 import 'package:rivil/widgets/slide_page_route.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -110,15 +111,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         icon: Icons.map_outlined,
                         title: 'Daftar Rencana Perjalanan',
                         onTap: () {
-                          // Navigate to trip plan list page
-                        },
-                      ),
-                      _buildMenuItem(
-                        context: context,
-                        icon: Icons.settings_outlined,
-                        title: 'Pengaturan',
-                        onTap: () {
-                          // Navigate to settings page
+                          Navigator.push(
+                            context,
+                            SlidePageRoute(
+                              child: const SavedTripsScreen(),
+                            ),
+                          );
                         },
                       ),
                       const SizedBox(height: 20),
@@ -203,7 +201,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 1),
       decoration: BoxDecoration(
-        color: Colors.white,
         border: Border(
           bottom: BorderSide(
             color: Colors.grey.shade200,
@@ -287,9 +284,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Keluar', style: TextStyle(fontSize: 16)),
-        content: const Text('Apakah Anda yakin ingin keluar dari akun Anda?',
-            style: TextStyle(fontSize: 14)),
+        title: const Text(
+          'Keluar',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+        content: const Text(
+          'Apakah Anda yakin ingin keluar dari akun Anda?',
+          style: TextStyle(fontSize: 14),
+        ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
