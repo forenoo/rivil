@@ -75,8 +75,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             const SizedBox(height: 8),
                             Text(
                               'Rivil',
-                              style: TextStyle(
-                                fontSize: 28,
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontSize: 20,
                                 fontWeight: FontWeight.w600,
                                 color: colorScheme.primary,
                                 letterSpacing: -1.0,
@@ -89,8 +89,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                     Text(
                       'Selamat Datang Kembali 👋',
-                      style: TextStyle(
-                        fontSize: 26,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontSize: 18,
                         fontWeight: FontWeight.w600,
                         color: Colors.grey.shade800,
                         letterSpacing: -0.5,
@@ -99,8 +99,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 4),
                     Text(
                       'Silahkan masuk ke akun Anda untuk melanjutkan',
-                      style: TextStyle(
-                        fontSize: 14,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontSize: 12,
                         color: Colors.grey.shade600,
                       ),
                     ),
@@ -210,10 +210,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Text(
+                            : Text(
                                 'Masuk',
-                                style: TextStyle(
-                                  fontSize: 16,
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  fontSize: 14,
+                                  color: Colors.white,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -224,7 +225,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: RichText(
                         text: TextSpan(
                           text: 'Belum punya akun? ',
-                          style: TextStyle(color: Colors.grey.shade700),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.grey.shade700,
+                          ),
                           children: [
                             TextSpan(
                               text: 'Daftar',

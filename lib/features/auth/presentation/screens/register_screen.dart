@@ -73,7 +73,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             Text(
                               'Rivil',
                               style: TextStyle(
-                                fontSize: 28,
+                                fontSize: 22,
                                 fontWeight: FontWeight.w600,
                                 color: colorScheme.primary,
                                 letterSpacing: -1.0,
@@ -87,7 +87,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     Text(
                       'Buat Akun Baru',
                       style: TextStyle(
-                        fontSize: 26,
+                        fontSize: 20,
                         fontWeight: FontWeight.w600,
                         color: Colors.grey.shade800,
                         letterSpacing: -0.5,
@@ -97,7 +97,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     Text(
                       'Isi data Anda untuk mendaftar',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 12,
                         color: Colors.grey.shade600,
                       ),
                     ),
@@ -230,8 +230,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         child: state is AuthLoading
                             ? const SizedBox(
-                                height: 24,
-                                width: 24,
+                                height: 20,
+                                width: 20,
                                 child: CircularProgressIndicator(
                                   color: Colors.white,
                                   strokeWidth: 2,
@@ -240,7 +240,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             : const Text(
                                 'Daftar',
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: 14,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -251,13 +251,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       child: RichText(
                         text: TextSpan(
                           text: 'Sudah punya akun? ',
-                          style: TextStyle(color: Colors.grey.shade700),
+                          style: TextStyle(
+                              color: Colors.grey.shade700, fontSize: 12),
                           children: [
                             TextSpan(
                               text: 'Masuk',
                               style: TextStyle(
                                 color: colorScheme.primary,
                                 fontWeight: FontWeight.w600,
+                                fontSize: 12,
                               ),
                               recognizer: TapGestureRecognizer()
                                 ..onTap = () {

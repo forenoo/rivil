@@ -162,235 +162,240 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
 
   Widget _buildFilterBottomSheet(
       BuildContext context, ExplorationBloc explorationBloc) {
-    return BlocProvider.value(
-      value: explorationBloc,
-      child: BlocBuilder<ExplorationBloc, ExplorationState>(
-        builder: (context, state) {
-          if (state is ExplorationLoaded) {
-            // Initialize filter values from state
-            _minRating = state.minRating ?? 0;
-            _selectedCategory = state.selectedCategory;
-          }
+    return SafeArea(
+      child: BlocProvider.value(
+        value: explorationBloc,
+        child: BlocBuilder<ExplorationBloc, ExplorationState>(
+          builder: (context, state) {
+            if (state is ExplorationLoaded) {
+              // Initialize filter values from state
+              _minRating = state.minRating ?? 0;
+              _selectedCategory = state.selectedCategory;
+            }
 
-          return StatefulBuilder(builder: (context, setState) {
-            return Container(
-              height: MediaQuery.of(context).size.height * 0.75,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(24),
-                  topRight: Radius.circular(24),
+            return StatefulBuilder(builder: (context, setState) {
+              return Container(
+                height: MediaQuery.of(context).size.height * 0.75,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
                 ),
-              ),
-              child: Column(
-                children: [
-                  // Handle bar
-                  Container(
-                    margin: const EdgeInsets.only(top: 12, bottom: 8),
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2),
+                child: Column(
+                  children: [
+                    // Handle bar
+                    Container(
+                      margin: const EdgeInsets.only(top: 12, bottom: 8),
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
-                  ),
 
-                  // Header
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Filter',
-                          style:
-                              Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            setState(() {
-                              _minRating = 0;
-                              _selectedCategory = null;
-                            });
-                          },
-                          child: Text(
-                            'Reset',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Divider(),
-                  const SizedBox(height: 12),
-                  Expanded(
-                    child: ListView(
+                    // Header
+                    Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      children: [
-                        // Category filter
-                        const Text(
-                          'Kategori',
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Filter',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                _minRating = 0;
+                                _selectedCategory = null;
+                              });
+                            },
+                            child: Text(
+                              'Reset',
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Divider(),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: ListView(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        children: [
+                          // Category filter
+                          const Text(
+                            'Kategori',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          if (state is ExplorationLoaded)
+                            Wrap(
+                              spacing: 8,
+                              children: state.categories.map((category) {
+                                final isSelected = (category == 'Semua' &&
+                                        _selectedCategory == null) ||
+                                    category == _selectedCategory;
+
+                                return FilterChip(
+                                  label: Text(category),
+                                  selected: isSelected,
+                                  side: BorderSide(
+                                    color: isSelected
+                                        ? AppColors.primary
+                                        : Colors.grey.shade400,
+                                  ),
+                                  backgroundColor: Colors.grey.shade50,
+                                  selectedColor: AppColors.jordyBlue200,
+                                  checkmarkColor: AppColors.primary,
+                                  labelStyle: TextStyle(
+                                    color: isSelected
+                                        ? AppColors.primary
+                                        : Colors.grey.shade800,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w600
+                                        : FontWeight.normal,
+                                  ),
+                                  onSelected: (selected) {
+                                    setState(() {
+                                      if (selected) {
+                                        _selectedCategory = category == 'Semua'
+                                            ? null
+                                            : category;
+                                      }
+                                    });
+                                  },
+                                );
+                              }).toList(),
+                            ),
+
+                          const SizedBox(height: 20),
+
+                          // Minimum rating
+                          const Text(
+                            'Rating Minimum',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.star,
+                                    size: 18,
+                                    color: Colors.amber.shade600,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${_minRating.toInt()}',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.star,
+                                    size: 18,
+                                    color: Colors.amber.shade600,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '5',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          Slider(
+                            value: _minRating,
+                            min: 0,
+                            max: 5,
+                            divisions: 5,
+                            activeColor: AppColors.primary,
+                            inactiveColor: AppColors.jordyBlue200,
+                            label: '${_minRating.toInt()}',
+                            onChanged: (value) {
+                              setState(() {
+                                _minRating = value;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Apply button
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border(
+                          top: BorderSide(
+                            color: Colors.grey.shade200,
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          explorationBloc.add(
+                            FilterDestinationsEvent(
+                              minRating: _minRating,
+                              category: _selectedCategory,
+                            ),
+                          );
+
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Terapkan Filter',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        if (state is ExplorationLoaded)
-                          Wrap(
-                            spacing: 8,
-                            children: state.categories.map((category) {
-                              final isSelected = (category == 'Semua' &&
-                                      _selectedCategory == null) ||
-                                  category == _selectedCategory;
-
-                              return FilterChip(
-                                label: Text(category),
-                                selected: isSelected,
-                                side: BorderSide(
-                                  color: isSelected
-                                      ? AppColors.primary
-                                      : Colors.grey.shade400,
-                                ),
-                                backgroundColor: Colors.grey.shade50,
-                                selectedColor: AppColors.jordyBlue200,
-                                checkmarkColor: AppColors.primary,
-                                labelStyle: TextStyle(
-                                  color: isSelected
-                                      ? AppColors.primary
-                                      : Colors.grey.shade800,
-                                  fontWeight: isSelected
-                                      ? FontWeight.w600
-                                      : FontWeight.normal,
-                                ),
-                                onSelected: (selected) {
-                                  setState(() {
-                                    if (selected) {
-                                      _selectedCategory =
-                                          category == 'Semua' ? null : category;
-                                    }
-                                  });
-                                },
-                              );
-                            }).toList(),
-                          ),
-
-                        const SizedBox(height: 20),
-
-                        // Minimum rating
-                        const Text(
-                          'Rating Minimum',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.star,
-                                  size: 18,
-                                  color: Colors.amber.shade600,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '${_minRating.toInt()}',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.star,
-                                  size: 18,
-                                  color: Colors.amber.shade600,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '5',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        Slider(
-                          value: _minRating,
-                          min: 0,
-                          max: 5,
-                          divisions: 5,
-                          activeColor: AppColors.primary,
-                          inactiveColor: AppColors.jordyBlue200,
-                          label: '${_minRating.toInt()}',
-                          onChanged: (value) {
-                            setState(() {
-                              _minRating = value;
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Apply button
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border(
-                        top: BorderSide(
-                          color: Colors.grey.shade200,
-                          width: 1,
-                        ),
                       ),
                     ),
-                    child: ElevatedButton(
-                      onPressed: () {
-                        explorationBloc.add(
-                          FilterDestinationsEvent(
-                            minRating: _minRating,
-                            category: _selectedCategory,
-                          ),
-                        );
-
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'Terapkan Filter',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          });
-        },
+                  ],
+                ),
+              );
+            });
+          },
+        ),
       ),
     );
   }
@@ -825,7 +830,7 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
                     child: Text(
                       'Lihat Detail',
                       style: TextStyle(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),

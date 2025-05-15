@@ -305,7 +305,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget _buildSaveButton() {
     return Container(
       width: double.infinity,
-      height: 48,
       margin: const EdgeInsets.only(bottom: 16),
       child: ElevatedButton(
         onPressed: _isLoading ? null : _saveProfile,

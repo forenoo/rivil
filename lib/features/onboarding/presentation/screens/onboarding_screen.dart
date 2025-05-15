@@ -111,19 +111,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           _onboardingSteps[_currentPage]['title']!,
                           style: const TextStyle(
                             fontWeight: FontWeight.w700,
-                            fontSize: 28,
+                            fontSize: 24,
                             letterSpacing: -0.5,
                             height: 1.2,
                             color: AppColors.primary,
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 8),
                         Text(
                           _onboardingSteps[_currentPage]['description']!,
                           style: TextStyle(
                             fontWeight: FontWeight.w400,
-                            fontSize: 16,
+                            fontSize: 14,
                             height: 1.5,
                             letterSpacing: -0.2,
                             color: Colors.grey[500],
@@ -149,7 +149,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           child: Text(
                             isLastPage ? 'Mulai Perjalanan' : 'Selanjutnya',
                             style: const TextStyle(
-                              fontSize: 17,
+                              fontSize: 14,
                               fontWeight: FontWeight.w600,
                               color: Colors.white,
                               letterSpacing: -0.2,

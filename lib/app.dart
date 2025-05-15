@@ -31,6 +31,7 @@ import 'package:rivil/widgets/slide_page_route.dart';
 import 'package:rivil/features/trip_planning/domain/repositories/trip_repository.dart';
 import 'package:rivil/features/trip_planning/data/repositories/trip_repository_impl.dart';
 import 'package:rivil/features/trip_planning/presentation/bloc/trip_save_bloc.dart';
+import 'package:rivil/widgets/splash_screen.dart';
 
 final GlobalKey<_MainNavigationWrapperState> mainNavigationKey =
     GlobalKey<_MainNavigationWrapperState>();
@@ -127,13 +128,15 @@ class RivilApp extends StatelessWidget {
                 ),
               ),
             ),
-            home: OnboardingGate(
-              onboardingService: context.read<OnboardingService>(),
-              child: AuthGate(
-                supabaseService: supabaseService,
-                authenticatedRoute:
-                    MainNavigationWrapper(key: mainNavigationKey),
-                unauthenticatedRoute: const LoginScreen(),
+            home: SplashScreen(
+              destination: OnboardingGate(
+                onboardingService: context.read<OnboardingService>(),
+                child: AuthGate(
+                  supabaseService: supabaseService,
+                  authenticatedRoute:
+                      MainNavigationWrapper(key: mainNavigationKey),
+                  unauthenticatedRoute: const LoginScreen(),
+                ),
               ),
             ),
           );
@@ -266,7 +269,7 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return SizedBox(
-      width: 72,
+      width: 56,
       child: InkWell(
         onTap: () {
           navigateToTab(index);
@@ -286,7 +289,7 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
               label,
               style: TextStyle(
                 color: isSelected ? colorScheme.primary : Colors.grey.shade600,
-                fontSize: 12,
+                fontSize: 10,
                 fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
               ),
               textAlign: TextAlign.center,

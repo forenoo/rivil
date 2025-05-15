@@ -66,120 +66,122 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     SortCategory selectedCategory = _currentSortCategory;
     bool selectedAscending = _isAscending;
 
-    return StatefulBuilder(
-      builder: (context, setSheetState) {
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Urutkan Berdasarkan',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: -0.5,
-                  fontSize: 20,
+    return SafeArea(
+      child: StatefulBuilder(
+        builder: (context, setSheetState) {
+          return Container(
+            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Urutkan Berdasarkan',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
+                    fontSize: 20,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              _buildSortCategoryRow(
-                title: 'Nama',
-                icon: Icons.sort_by_alpha,
-                category: SortCategory.name,
-                selectedCategory: selectedCategory,
-                isAscending: selectedCategory == SortCategory.name
-                    ? selectedAscending
-                    : true,
-                ascendingText: 'A-Z',
-                descendingText: 'Z-A',
-                onCategorySelected: () {
-                  setSheetState(() {
-                    selectedCategory = SortCategory.name;
-                  });
-                },
-                onDirectionChanged: (isAsc) {
-                  setSheetState(() {
-                    selectedAscending = isAsc;
-                  });
-                },
-              ),
-              _buildSortCategoryRow(
-                title: 'Rating',
-                icon: Icons.star,
-                category: SortCategory.rating,
-                selectedCategory: selectedCategory,
-                isAscending: selectedCategory == SortCategory.rating
-                    ? selectedAscending
-                    : false,
-                ascendingText: 'Terendah',
-                descendingText: 'Tertinggi',
-                onCategorySelected: () {
-                  setSheetState(() {
-                    selectedCategory = SortCategory.rating;
-                  });
-                },
-                onDirectionChanged: (isAsc) {
-                  setSheetState(() {
-                    selectedAscending = isAsc;
-                  });
-                },
-              ),
-              _buildSortCategoryRow(
-                title: 'Jarak',
-                icon: Icons.place,
-                category: SortCategory.distance,
-                selectedCategory: selectedCategory,
-                isAscending: selectedCategory == SortCategory.distance
-                    ? selectedAscending
-                    : true,
-                ascendingText: 'Terdekat',
-                descendingText: 'Terjauh',
-                onCategorySelected: () {
-                  setSheetState(() {
-                    selectedCategory = SortCategory.distance;
-                  });
-                },
-                onDirectionChanged: (isAsc) {
-                  setSheetState(() {
-                    selectedAscending = isAsc;
-                  });
-                },
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _currentSortCategory = selectedCategory;
-                      _isAscending = selectedAscending;
+                const SizedBox(height: 20),
+                _buildSortCategoryRow(
+                  title: 'Nama',
+                  icon: Icons.sort_by_alpha,
+                  category: SortCategory.name,
+                  selectedCategory: selectedCategory,
+                  isAscending: selectedCategory == SortCategory.name
+                      ? selectedAscending
+                      : true,
+                  ascendingText: 'A-Z',
+                  descendingText: 'Z-A',
+                  onCategorySelected: () {
+                    setSheetState(() {
+                      selectedCategory = SortCategory.name;
                     });
-                    Navigator.pop(context);
-                    // Reload the state to trigger sorting
-                    context.read<FavoritesBloc>().add(LoadFavorites());
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                  onDirectionChanged: (isAsc) {
+                    setSheetState(() {
+                      selectedAscending = isAsc;
+                    });
+                  },
+                ),
+                _buildSortCategoryRow(
+                  title: 'Rating',
+                  icon: Icons.star,
+                  category: SortCategory.rating,
+                  selectedCategory: selectedCategory,
+                  isAscending: selectedCategory == SortCategory.rating
+                      ? selectedAscending
+                      : false,
+                  ascendingText: 'Terendah',
+                  descendingText: 'Tertinggi',
+                  onCategorySelected: () {
+                    setSheetState(() {
+                      selectedCategory = SortCategory.rating;
+                    });
+                  },
+                  onDirectionChanged: (isAsc) {
+                    setSheetState(() {
+                      selectedAscending = isAsc;
+                    });
+                  },
+                ),
+                _buildSortCategoryRow(
+                  title: 'Jarak',
+                  icon: Icons.place,
+                  category: SortCategory.distance,
+                  selectedCategory: selectedCategory,
+                  isAscending: selectedCategory == SortCategory.distance
+                      ? selectedAscending
+                      : true,
+                  ascendingText: 'Terdekat',
+                  descendingText: 'Terjauh',
+                  onCategorySelected: () {
+                    setSheetState(() {
+                      selectedCategory = SortCategory.distance;
+                    });
+                  },
+                  onDirectionChanged: (isAsc) {
+                    setSheetState(() {
+                      selectedAscending = isAsc;
+                    });
+                  },
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _currentSortCategory = selectedCategory;
+                        _isAscending = selectedAscending;
+                      });
+                      Navigator.pop(context);
+                      // Reload the state to trigger sorting
+                      context.read<FavoritesBloc>().add(LoadFavorites());
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
-                  ),
-                  child: const Text(
-                    'Terapkan',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
+                    child: const Text(
+                      'Terapkan',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        );
-      },
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -445,55 +447,38 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
   Widget _buildSingleColumnGridView(
       ThemeData theme, List<FavoriteDestination> items) {
-    return GridView.builder(
+    return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       physics: const BouncingScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 1,
-        childAspectRatio: 1.2,
-        mainAxisSpacing: 16,
-      ),
       itemCount: items.length,
       itemBuilder: (context, index) {
         final destination = items[index];
-        return _buildModernCard(theme, destination);
+        return _buildFavoriteDestinationCard(context, destination);
       },
     );
   }
 
-  Widget _buildModernCard(ThemeData theme, FavoriteDestination destination) {
+  Widget _buildFavoriteDestinationCard(
+      BuildContext context, FavoriteDestination destination) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        border: Border.all(color: Colors.grey.shade200),
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _navigateToDetail(destination.toMap()),
-          borderRadius: BorderRadius.circular(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        children: [
+          Stack(
             children: [
-              // Top image section
-              Stack(
-                children: [
-                  // Image
-                  Hero(
-                    tag: 'favorite_${destination.destinationId}',
-                    child: ClipRRect(
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(16),
-                        topRight: Radius.circular(16),
-                      ),
-                      child: Image.network(
+              ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+                child: destination.imageUrl.startsWith('http')
+                    ? Image.network(
                         destination.imageUrl,
                         height: 180,
                         width: double.infinity,
@@ -501,173 +486,201 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                         errorBuilder: (context, error, stackTrace) => Container(
                           height: 180,
                           width: double.infinity,
-                          color: Colors.grey.shade200,
+                          color: Colors.grey.shade300,
+                          child: const Icon(Icons.image, color: Colors.grey),
+                        ),
+                      )
+                    : Image.asset(
+                        destination.imageUrl,
+                        height: 180,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          height: 180,
+                          width: double.infinity,
+                          color: Colors.grey.shade300,
                           child: const Icon(Icons.image, color: Colors.grey),
                         ),
                       ),
-                    ),
-                  ),
-
-                  // Category badge at top left
-                  Positioned(
-                    top: 12,
-                    left: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.85),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        destination.category,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // Favorite button at top right
-                  Positioned(
-                    top: 12,
-                    right: 12,
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.85),
-                        shape: BoxShape.circle,
-                      ),
-                      child: IconButton(
-                        padding: EdgeInsets.zero,
-                        iconSize: 20,
-                        icon: const Icon(
-                          Icons.favorite,
-                          color: Colors.redAccent,
-                        ),
-                        onPressed: () {
-                          context.read<FavoritesBloc>().add(
-                                RemoveFromFavorites(destination.destinationId),
-                              );
-                        },
-                      ),
-                    ),
-                  ),
-
-                  // Rating badge at bottom right of image
-                  Positioned(
-                    bottom: 12,
-                    right: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.85),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.star,
-                            size: 16,
-                            color: Colors.amber.shade800,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            destination.rating.toString(),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.amber.shade800,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
               ),
-
-              // Details section
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              Positioned(
+                top: 12,
+                right: 12,
+                child: Container(
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white,
+                  ),
+                  padding: const EdgeInsets.all(8),
+                  child: GestureDetector(
+                    onTap: () {
+                      context.read<FavoritesBloc>().add(
+                            RemoveFromFavorites(destination.destinationId),
+                          );
+                    },
+                    child: const Icon(
+                      Icons.favorite,
+                      color: Colors.red,
+                      size: 18,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 12,
+                left: 12,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
                     children: [
-                      // Title
+                      Icon(
+                        Icons.near_me,
+                        size: 14,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 4),
                       Text(
-                        destination.name,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: -0.5,
-                          fontSize: 18,
+                        destination.distance != null
+                            ? '${destination.distance.toStringAsFixed(1)} km'
+                            : 'Calculating...',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 8),
-
-                      // Location
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.location_on,
-                            size: 14,
-                            color: AppColors.primary,
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              destination.location,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: Colors.grey.shade600,
-                                fontSize: 13,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 6),
-
-                      // Distance
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.directions_walk,
-                            size: 14,
-                            color: AppColors.primary,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${destination.distance.toStringAsFixed(1)} km dari lokasi Anda',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.grey.shade600,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
                       ),
                     ],
                   ),
                 ),
               ),
+              Positioned(
+                bottom: 12,
+                left: 12,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.star,
+                        size: 14,
+                        color: _getRatingIconColor(destination),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _getRatingText(destination),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 12,
+                right: 12,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    destination.category,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
-        ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  destination.name,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.location_on,
+                      size: 16,
+                      color: colorScheme.primary,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        destination.location,
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: () {
+                    _navigateToDetail(destination.toMap());
+                  },
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 40),
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      'Lihat Detail',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  Color _getRatingIconColor(FavoriteDestination destination) {
+    // If you have a type field, adjust this logic accordingly
+    // For now, use amber for all
+    return Colors.amber.shade600;
+  }
+
+  String _getRatingText(FavoriteDestination destination) {
+    // If you have app_rating_average, use it, else fallback to rating
+    return destination.rating.toStringAsFixed(1);
   }
 }

@@ -194,7 +194,7 @@ class _AddDestinationScreenState extends State<AddDestinationScreen> {
                                     ),
                                   ),
                                   Container(
-                                    height: 250,
+                                    height: 260,
                                     margin: const EdgeInsets.only(
                                         top: 6, bottom: 16),
                                     decoration: BoxDecoration(
@@ -456,10 +456,7 @@ class _AddDestinationScreenState extends State<AddDestinationScreen> {
   Widget _buildSubmitButton(BuildContext context, AddDestinationState state) {
     return SizedBox(
       width: double.infinity,
-      child: CupertinoButton(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        borderRadius: BorderRadius.circular(10),
-        color: Theme.of(context).colorScheme.primary,
+      child: ElevatedButton(
         onPressed: state is AddDestinationLoading
             ? null
             : () {
@@ -496,7 +493,7 @@ class _AddDestinationScreenState extends State<AddDestinationScreen> {
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
-                  fontSize: 15,
+                  fontSize: 14,
                 ),
               ),
       ),

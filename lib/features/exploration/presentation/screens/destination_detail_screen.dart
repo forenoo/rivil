@@ -512,7 +512,7 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
           'Detail Destinasi',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            fontSize: 17,
+            fontSize: 15,
             letterSpacing: -0.5,
           ),
         ),
@@ -555,80 +555,82 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
           }
           return false;
         },
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Hero image container
-              SizedBox(
-                width: double.infinity,
-                height: 220,
-                child: Stack(
-                  children: [
-                    // Hero image
-                    if (_isLoadingImage)
-                      Container(
-                        color: Colors.grey.shade300,
-                        child: const Center(
-                          child: CircularProgressIndicator(),
-                        ),
-                      )
-                    else
-                      SizedBox(
-                        width: double.infinity,
-                        height: double.infinity,
-                        child: Image.network(
-                          _destination.imageUrl ??
-                              'https://via.placeholder.com/400',
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Hero image container
+                SizedBox(
+                  width: double.infinity,
+                  height: 220,
+                  child: Stack(
+                    children: [
+                      // Hero image
+                      if (_isLoadingImage)
+                        Container(
+                          color: Colors.grey.shade300,
+                          child: const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        )
+                      else
+                        SizedBox(
                           width: double.infinity,
                           height: double.infinity,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(
-                            color: Colors.grey.shade300,
-                            child: const Icon(Icons.image,
-                                size: 50, color: Colors.grey),
+                          child: Image.network(
+                            _destination.imageUrl ??
+                                'https://via.placeholder.com/400',
+                            width: double.infinity,
+                            height: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(
+                              color: Colors.grey.shade300,
+                              child: const Icon(Icons.image,
+                                  size: 50, color: Colors.grey),
+                            ),
+                          ),
+                        ),
+                      // Gradient overlay
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withOpacity(0.5),
+                            ],
+                            stops: const [0.7, 1.0],
                           ),
                         ),
                       ),
-                    // Gradient overlay
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withOpacity(0.5),
-                          ],
-                          stops: const [0.7, 1.0],
-                        ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildDestinationTitle(context),
-                    const SizedBox(height: 16),
-                    _buildOverviewSection(context),
-                    const SizedBox(height: 16),
-                    _buildLocationMapSection(context),
-                    const SizedBox(height: 16),
-                    _buildRatingSection(context),
-                    const SizedBox(height: 16),
-                    _buildAddCommentSection(context),
-                    const SizedBox(height: 16),
-                    _buildReviewsSection(context),
-                    const SizedBox(height: 24),
-                  ],
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildDestinationTitle(context),
+                      const SizedBox(height: 16),
+                      _buildOverviewSection(context),
+                      const SizedBox(height: 16),
+                      _buildLocationMapSection(context),
+                      const SizedBox(height: 16),
+                      _buildRatingSection(context),
+                      const SizedBox(height: 16),
+                      _buildAddCommentSection(context),
+                      const SizedBox(height: 16),
+                      _buildReviewsSection(context),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -648,7 +650,7 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
             Expanded(
               child: Text(
                 _destination.name,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
               ),
@@ -678,7 +680,7 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
                       '@${_destination.addedByUsername}',
                       style: TextStyle(
                         color: colorScheme.primary,
-                        fontSize: 14,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -698,7 +700,7 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
                 _destination.address ?? 'Kota Malang, Jawa Timur',
                 style: TextStyle(
                   color: Colors.grey[600],
-                  fontSize: 14,
+                  fontSize: 12,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -729,7 +731,7 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
                     const SizedBox(width: 4),
                     Icon(
                       Icons.star,
-                      size: 16,
+                      size: 14,
                       color: colorScheme.primary,
                     ),
                     const SizedBox(width: 4),
@@ -747,7 +749,7 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
                           : '(No ratings yet)',
                       style: TextStyle(
                         color: colorScheme.primary.withOpacity(0.8),
-                        fontSize: 12,
+                        fontSize: 10,
                       ),
                     ),
                   ],
@@ -768,7 +770,7 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
                 children: [
                   Icon(
                     Icons.star,
-                    size: 16,
+                    size: 14,
                     color: Colors.amber.shade700,
                   ),
                   const SizedBox(width: 4),
@@ -787,7 +789,7 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
                     '(${_destination.appRatingCount})',
                     style: TextStyle(
                       color: Colors.amber.shade700.withOpacity(0.8),
-                      fontSize: 12,
+                      fontSize: 10,
                     ),
                   ),
                 ],
@@ -809,7 +811,7 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
                   children: [
                     Icon(
                       Icons.directions_walk,
-                      size: 16,
+                      size: 14,
                       color: Colors.green.shade700,
                     ),
                     const SizedBox(width: 4),
@@ -818,6 +820,7 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
                       style: TextStyle(
                         color: Colors.green.shade700,
                         fontWeight: FontWeight.bold,
+                        fontSize: 12,
                       ),
                     ),
                   ],
@@ -838,7 +841,7 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
       children: [
         Text(
           'Overview',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
         ),
@@ -846,7 +849,7 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
         Text(
           description,
           style: const TextStyle(
-            fontSize: 14,
+            fontSize: 12,
             height: 1.5,
           ),
         ),
@@ -873,7 +876,7 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
       children: [
         Text(
           'Lokasi',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
         ),
@@ -951,7 +954,7 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
       children: [
         Text(
           'Komentar',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
         ),
@@ -1115,11 +1118,11 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
                       comment['date'] as String,
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 10,
                         color: Colors.grey[600],
                       ),
                     ),
@@ -1132,7 +1135,7 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
           Text(
             comment['comment'] as String,
             style: const TextStyle(
-              fontSize: 14,
+              fontSize: 12,
             ),
           ),
         ],
@@ -1146,7 +1149,7 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
       children: [
         Text(
           'Tambahkan Komentar',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
         ),
@@ -1159,6 +1162,9 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
               maxLines: 4,
               decoration: InputDecoration(
                 hintText: 'Bagikan pengalaman Anda...',
+                hintStyle: TextStyle(
+                  fontSize: 12,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide(color: Colors.grey.shade300),
@@ -1213,7 +1219,7 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
       children: [
         Text(
           'Beri Rating',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
         ),
@@ -1328,6 +1334,7 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
             style: TextStyle(
               fontWeight: FontWeight.bold,
               color: Colors.grey[700],
+              fontSize: 13,
             ),
           ),
           const SizedBox(height: 16),
@@ -1340,7 +1347,7 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
                       ? Icons.star
                       : Icons.star_border,
                   color: Colors.amber,
-                  size: 36,
+                  size: 30,
                 );
               }),
             ],
@@ -1437,7 +1444,7 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
                             ? Icons.star
                             : Icons.star_border,
                         color: Colors.amber,
-                        size: 36,
+                        size: 30,
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       constraints: const BoxConstraints(),
@@ -1450,7 +1457,7 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
             'Tap bintang untuk memberi rating',
             style: TextStyle(
               color: Colors.grey[600],
-              fontSize: 14,
+              fontSize: 12,
             ),
           ),
 

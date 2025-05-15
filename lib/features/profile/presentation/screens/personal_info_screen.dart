@@ -594,7 +594,6 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   Widget _buildEditButton(BuildContext context) {
     return Container(
       width: double.infinity,
-      height: 40,
       margin: const EdgeInsets.only(bottom: 8),
       child: ElevatedButton(
         onPressed: () {

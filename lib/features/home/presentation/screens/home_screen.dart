@@ -717,7 +717,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final location = destination['address'] as String? ?? '';
     final distance = '${destination['distance']} km';
     final imageUrl = destination['image_url'] as String?;
-    final destinationId = destination['id'] as int;
     final destinationType = destination['type'] as String? ?? 'added_by_google';
 
     // Determine which rating to display based on type
@@ -738,7 +737,7 @@ class _HomeScreenState extends State<HomeScreen> {
           width: 1,
         ),
       ),
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: () {
           _navigateToDetail(destination);
@@ -806,37 +805,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        // Add favorite button
-                        BlocBuilder<DestinationBloc, DestinationState>(
-                          buildWhen: (previous, current) {
-                            if (previous is DestinationsLoaded &&
-                                current is DestinationsLoaded) {
-                              return previous.favorites[destinationId] !=
-                                  current.favorites[destinationId];
-                            }
-                            return true;
-                          },
-                          builder: (context, state) {
-                            final isFavorite = state is DestinationsLoaded
-                                ? (state.favorites[destinationId] ?? false)
-                                : false;
-
-                            return GestureDetector(
-                              onTap: () {
-                                _toggleFavorite(destinationId);
-                              },
-                              child: Icon(
-                                isFavorite
-                                    ? Icons.favorite
-                                    : Icons.favorite_border,
-                                color: isFavorite
-                                    ? Colors.red
-                                    : Colors.grey.shade700,
-                                size: 16,
-                              ),
-                            );
-                          },
                         ),
                       ],
                     ),

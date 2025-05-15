@@ -55,7 +55,6 @@ flutter:
     - assets/images/
     - assets/images/destinations/
     - assets/vectors/
-    - .env
 
   fonts:
     - family: Manrope

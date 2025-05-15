@@ -253,7 +253,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildLogoutButton(BuildContext context) {
     return Container(
       width: double.infinity,
-      height: 48,
       margin: const EdgeInsets.only(bottom: 16),
       child: ElevatedButton(
         onPressed: () {
