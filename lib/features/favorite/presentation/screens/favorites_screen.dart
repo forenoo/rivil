@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rivil/app.dart';
 import 'package:rivil/core/config/app_colors.dart';
 import 'package:rivil/features/exploration/presentation/screens/destination_detail_screen.dart';
 import 'package:rivil/features/favorite/domain/model/favorite_destination.dart';
@@ -350,21 +351,17 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     if (state.favorites.isEmpty) {
                       return EmptyFavorites(
                         onExplore: () {
-                          // Navigate to exploration screen
-                          Navigator.pop(context);
+                          // Navigate to the exploration tab (index 1)
+                          mainNavigationKey.currentState?.navigateToTab(1);
                         },
                       );
                     }
 
-                    // Get the data based on search state
                     final itemsToDisplay = _searchQuery.isEmpty
                         ? state.favorites
                         : state.filteredFavorites;
-
-                    // Sort the items without using setState
                     final sortedItems = _sortFavorites(itemsToDisplay);
 
-                    // Display the sorted items using a single column grid
                     return _buildSingleColumnGridView(theme, sortedItems);
                   }
 
@@ -517,6 +514,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       context.read<FavoritesBloc>().add(
                             RemoveFromFavorites(destination.destinationId),
                           );
+                      // Reload favorites after removal
+                      Future.delayed(const Duration(milliseconds: 300), () {
+                        context.read<FavoritesBloc>().add(LoadFavorites());
+                      });
                     },
                     child: const Icon(
                       Icons.favorite,
